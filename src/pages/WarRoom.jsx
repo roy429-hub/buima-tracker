@@ -9,6 +9,7 @@ import {
 import { getSites, currencySymbol, fmt0, fmt, getUploads } from "../lib/storage";
 import { aggregateAllSites, aggregateSite } from "../lib/aggregate";
 import { fmtUSD, fmtCompact, FX_LAST_UPDATED, toUSD } from "../lib/fx";
+import { useStorageVersion } from "../lib/useStorage";
 import LiveClock from "../components/LiveClock";
 import SiteQuickUpload from "../components/SiteQuickUpload";
 
@@ -21,10 +22,10 @@ L.Icon.Default.mergeOptions({
 
 export default function WarRoom() {
   const [search, setSearch] = useState("");
-  const [refreshKey, setRefreshKey] = useState(0);
   const [uploadTarget, setUploadTarget] = useState(null);
-  const sites = useMemo(() => getSites(), [refreshKey]);
-  const data  = useMemo(() => aggregateAllSites(sites), [sites, refreshKey]);
+  const version = useStorageVersion();
+  const sites = useMemo(() => getSites(), [version]);
+  const data  = useMemo(() => aggregateAllSites(sites), [sites, version]);
 
   const filteredSites = sites.filter(s =>
     !search || s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -397,7 +398,7 @@ export default function WarRoom() {
         <SiteQuickUpload
           site={uploadTarget}
           onClose={() => setUploadTarget(null)}
-          onDone={() => setRefreshKey(k => k + 1)}
+          onDone={() => { /* storage subscription handles refresh */ }}
         />
       )}
     </div>

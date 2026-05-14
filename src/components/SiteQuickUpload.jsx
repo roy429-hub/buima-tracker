@@ -6,19 +6,23 @@ import { addUpload } from "../lib/storage";
 export default function SiteQuickUpload({ site, onClose, onDone }) {
   const [count, setCount] = useState(0);
 
-  const handleParsed = (parsed) => {
-    addUpload({
-      siteId: site.id,
-      reportDate: parsed.reportDate,
-      chargerId: parsed.chargerId,
-      totalKwh: parsed.totalKwh,
-      totalSessions: parsed.totalSessions,
-      c1Sessions: parsed.c1Sessions,
-      c2Sessions: parsed.c2Sessions,
-      sessions: parsed.sessions,
-    });
-    setCount(c => c + 1);
-    onDone?.();
+  const handleParsed = async (parsed) => {
+    try {
+      await addUpload({
+        siteId: site.id,
+        reportDate: parsed.reportDate,
+        chargerId: parsed.chargerId,
+        totalKwh: parsed.totalKwh,
+        totalSessions: parsed.totalSessions,
+        c1Sessions: parsed.c1Sessions,
+        c2Sessions: parsed.c2Sessions,
+        sessions: parsed.sessions,
+      });
+      setCount(c => c + 1);
+      onDone?.();
+    } catch (e) {
+      alert("Failed to save: " + e.message);
+    }
   };
 
   return (

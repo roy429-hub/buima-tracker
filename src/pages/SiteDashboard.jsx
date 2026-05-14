@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { getSite, currencySymbol, fmt, fmt0, addUpload, deleteUpload } from "../lib/storage";
 import { aggregateSite } from "../lib/aggregate";
 import { fmtUSD, fmtCompact } from "../lib/fx";
+import { useStorageVersion } from "../lib/useStorage";
 import UploadDropzone from "../components/UploadDropzone";
 import LiveClock from "../components/LiveClock";
 
@@ -20,11 +21,11 @@ const PERIODS = [
 
 export default function SiteDashboard() {
   const { id } = useParams();
+  const version = useStorageVersion();
   const site = getSite(id);
   const [period, setPeriod] = useState("daily");
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  const data = useMemo(() => aggregateSite(id, site), [id, site, refreshKey]);
+  const data = useMemo(() => aggregateSite(id, site), [id, site, version]);
 
   if (!site) return (
     <div className="text-center py-20">
@@ -37,21 +38,23 @@ export default function SiteDashboard() {
   const t = data.totals;
   const series = data[period];
 
-  const handleParsed = (parsed) => {
-    addUpload({
-      siteId: id, reportDate: parsed.reportDate, chargerId: parsed.chargerId,
-      totalKwh: parsed.totalKwh, totalSessions: parsed.totalSessions,
-      c1Sessions: parsed.c1Sessions, c2Sessions: parsed.c2Sessions,
-      sessions: parsed.sessions,
-    });
-    setRefreshKey(k => k + 1);
+  const handleParsed = async (parsed) => {
+    try {
+      await addUpload({
+        siteId: id, reportDate: parsed.reportDate, chargerId: parsed.chargerId,
+        totalKwh: parsed.totalKwh, totalSessions: parsed.totalSessions,
+        c1Sessions: parsed.c1Sessions, c2Sessions: parsed.c2Sessions,
+        sessions: parsed.sessions,
+      });
+    } catch (e) {
+      alert("Failed to save upload: " + e.message);
+    }
   };
 
-  const removeUpload = (uid, date) => {
-    if (confirm(`Delete the upload for ${date}? You can re-upload it later.`)) {
-      deleteUpload(uid);
-      setRefreshKey(k => k + 1);
-    }
+  const removeUpload = async (uid, date) => {
+    if (!confirm(`Delete the upload for ${date}? You can re-upload it later.`)) return;
+    try { await deleteUpload(uid); }
+    catch (e) { alert("Delete failed: " + e.message); }
   };
 
   const annualizedKwh = t.totalDays > 0 ? (t.totalKwh / t.totalDays) * 365 : 0;

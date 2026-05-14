@@ -1,11 +1,18 @@
-import { NavLink, Outlet } from "react-router-dom";
-import { Globe, MapPinned, ShieldCheck, ChevronRight } from "lucide-react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Globe, MapPinned, ShieldCheck, ChevronRight, LogOut, User } from "lucide-react";
+import { useAuth, signOut } from "../lib/auth";
 
 export default function Layout() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const navItems = [
     { to: "/",      label: "War Room",     icon: Globe },
     { to: "/sites", label: "Installations", icon: MapPinned },
   ];
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-200">
@@ -29,22 +36,36 @@ export default function Layout() {
             </span>
           </div>
 
-          {/* RIGHT — Nav */}
-          <nav className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-            {navItems.map(({ to, label, icon: Icon }) => (
-              <NavLink key={to} to={to} end={to === "/"}
-                className={({ isActive }) =>
-                  `px-3 sm:px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                    isActive
-                      ? "bg-brand text-white shadow-sm"
-                      : "text-slate-600 hover:text-brand"
-                  }`
-                }>
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-              </NavLink>
-            ))}
-          </nav>
+          {/* RIGHT — Nav + user menu */}
+          <div className="flex items-center gap-3">
+            <nav className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+              {navItems.map(({ to, label, icon: Icon }) => (
+                <NavLink key={to} to={to} end={to === "/"}
+                  className={({ isActive }) =>
+                    `px-3 sm:px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                      isActive
+                        ? "bg-brand text-white shadow-sm"
+                        : "text-slate-600 hover:text-brand"
+                    }`
+                  }>
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </NavLink>
+              ))}
+            </nav>
+            {user && (
+              <div className="hidden md:flex items-center gap-2 border-l border-slate-200 pl-3">
+                <div className="flex items-center gap-1.5 text-xs">
+                  <User className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-slate-700 font-mono max-w-[160px] truncate">{user.email}</span>
+                </div>
+                <button onClick={handleSignOut} title="Sign out"
+                  className="text-slate-400 hover:text-brand p-1.5 rounded-md hover:bg-slate-100">
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         {/* subtle brand hairline at bottom for richness */}
         <div className="h-[2px] bg-gradient-to-r from-transparent via-brand to-transparent opacity-60" />

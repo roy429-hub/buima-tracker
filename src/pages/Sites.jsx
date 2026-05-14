@@ -8,6 +8,7 @@ import { getSites, upsertSite, deleteSite, currencySymbol } from "../lib/storage
 import { aggregateSite } from "../lib/aggregate";
 import { fmtUSD, fmtCompact } from "../lib/fx";
 import { geocodeAddress } from "../lib/geocode";
+import { useStorageVersion } from "../lib/useStorage";
 import SiteQuickUpload from "../components/SiteQuickUpload";
 
 const blankSite = () => ({
@@ -19,10 +20,11 @@ const blankSite = () => ({
 });
 
 export default function Sites() {
-  const [sites, setSites] = useState(getSites());
+  useStorageVersion(); // re-render on cache changes
+  const sites = getSites();
   const [editing, setEditing] = useState(null);
   const [uploadTarget, setUploadTarget] = useState(null);
-  const refresh = () => setSites(getSites());
+  const refresh = () => { /* storage notifies via subscription */ };
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-8 -mb-12">
@@ -119,9 +121,9 @@ export default function Sites() {
                     <div className="flex items-center gap-1">
                       <IconBtn onClick={() => setUploadTarget(site)} title="Quick upload xlsx"><Upload className="w-3.5 h-3.5" /></IconBtn>
                       <IconBtn onClick={() => setEditing(site)} title="Edit settings"><Settings className="w-3.5 h-3.5" /></IconBtn>
-                      <IconBtn onClick={() => {
+                      <IconBtn onClick={async () => {
                         if (confirm(`Delete ${site.name}? All uploads for this site will also be deleted.`)) {
-                          deleteSite(site.id); refresh();
+                          try { await deleteSite(site.id); } catch (e) { alert(e.message); }
                         }
                       }} title="Delete site" danger><Trash2 className="w-3.5 h-3.5" /></IconBtn>
                     </div>
@@ -262,11 +264,18 @@ function SiteForm({ site, setSite, onSaved }) {
       }
     }
 
-    const id = site.id ||
-      (site.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now().toString(36));
-
-    upsertSite({ ...site, id, city: inferredCity, country: inferredCountry, lat: coords.lat || 0, lng: coords.lng || 0 });
-    onSaved?.();
+    try {
+      await upsertSite({
+        ...site,
+        city: inferredCity,
+        country: inferredCountry,
+        lat: coords.lat || 0,
+        lng: coords.lng || 0,
+      });
+      onSaved?.();
+    } catch (e) {
+      setGeo({ status: "error", message: e.message || "Save failed", coords: null });
+    }
   };
 
   return (
