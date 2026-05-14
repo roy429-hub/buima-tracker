@@ -2,13 +2,15 @@ import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft, Zap, TrendingUp, Activity, DollarSign, Battery, Clock, Upload, Trash2,
-  FileSpreadsheet, AlertCircle, MapPin, Car, Radio, Sparkles, Settings, BarChart3
+  FileSpreadsheet, AlertCircle, MapPin, Car, Radio, Sparkles, Settings, BarChart3,
+  Link2, RefreshCw, Copy, CheckCheck, Loader2
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, Line, ComposedChart } from "recharts";
-import { getSite, currencySymbol, fmt, fmt0, addUpload, deleteUpload } from "../lib/storage";
+import { getSite, currencySymbol, fmt, fmt0, addUpload, deleteUpload, refreshFromDB } from "../lib/storage";
 import { aggregateSite } from "../lib/aggregate";
 import { fmtUSD, fmtCompact } from "../lib/fx";
 import { useStorageVersion } from "../lib/useStorage";
+import { dbRegenerateShareToken } from "../lib/supabase";
 import UploadDropzone from "../components/UploadDropzone";
 import LiveClock from "../components/LiveClock";
 
@@ -55,6 +57,29 @@ export default function SiteDashboard() {
     if (!confirm(`Delete the upload for ${date}? You can re-upload it later.`)) return;
     try { await deleteUpload(uid); }
     catch (e) { alert("Delete failed: " + e.message); }
+  };
+
+  // Share link state
+  const shareUrl = site?.shareToken ? `${window.location.origin}/share/${site.shareToken}` : "";
+  const [copied, setCopied] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const copyLink = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) { alert("Could not copy: " + e.message); }
+  };
+  const regenerateLink = async () => {
+    if (!confirm("Regenerate the share link?\n\nThe OLD link will stop working immediately. Use this if a link leaked or you changed clients.")) return;
+    setRegenerating(true);
+    try {
+      await dbRegenerateShareToken(site.id);
+      await refreshFromDB();   // pull the new share_token into the cache
+      setCopied(false);
+    } catch (e) { alert("Regenerate failed: " + e.message); }
+    finally { setRegenerating(false); }
   };
 
   const annualizedKwh = t.totalDays > 0 ? (t.totalKwh / t.totalDays) * 365 : 0;
@@ -237,6 +262,47 @@ export default function SiteDashboard() {
                     </button>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* SHARE LINK */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+            <div className="bg-slate-800/50 border-b border-slate-800 px-4 py-2.5 flex items-center gap-2">
+              <Link2 className="w-3.5 h-3.5 text-brand" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Client Share Link</h3>
+              <span className="text-[10px] text-slate-500 font-mono ml-auto">read-only · no login required</span>
+            </div>
+            <div className="p-4 space-y-3">
+              <p className="text-xs text-slate-400">
+                Share this URL with your client or investor. They'll see this site's performance in read-only mode — no login required.
+                Regenerate the link if it leaks or you change clients.
+              </p>
+              <div className="flex items-stretch gap-2 flex-wrap">
+                <div className="flex-1 min-w-[280px] flex items-center bg-slate-950 border border-slate-700 rounded-lg overflow-hidden">
+                  <input type="text" readOnly value={shareUrl}
+                    onClick={e => e.target.select()}
+                    className="flex-1 px-3 py-2 bg-transparent text-xs text-slate-300 font-mono outline-none" />
+                </div>
+                <button onClick={copyLink} disabled={!shareUrl}
+                  className={`px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all ${
+                    copied
+                      ? "bg-emerald-500 text-white"
+                      : "bg-brand hover:bg-brand-dark text-white shadow-[0_0_12px_rgba(190,18,60,0.25)]"
+                  }`}>
+                  {copied ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? "Copied" : "Copy Link"}
+                </button>
+                <button onClick={regenerateLink} disabled={regenerating}
+                  title="Generate a new link (old link stops working)"
+                  className="px-3 py-2 rounded-lg border border-slate-700 text-slate-400 hover:text-brand hover:border-brand text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50">
+                  {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  Regenerate
+                </button>
+                <a href={shareUrl} target="_blank" rel="noopener noreferrer"
+                  className="px-3 py-2 rounded-lg border border-slate-700 text-slate-400 hover:text-brand hover:border-brand text-xs flex items-center gap-1.5 transition-colors">
+                  <Link2 className="w-3.5 h-3.5" /> Preview
+                </a>
               </div>
             </div>
           </div>

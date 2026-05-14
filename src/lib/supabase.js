@@ -133,3 +133,23 @@ export async function dbDeleteUpload(id) {
   const { error } = await supabase.from("uploads").delete().eq("id", id);
   if (error) throw error;
 }
+
+// ─── Share Links (public read-only access) ───────────────
+export async function dbFetchSiteByShareToken(token) {
+  const { data, error } = await supabase.rpc("get_site_by_share_token", { token });
+  if (error) throw error;
+  if (!data || data.length === 0) return null;
+  return siteFromDB(data[0]);
+}
+
+export async function dbFetchUploadsByShareToken(token) {
+  const { data, error } = await supabase.rpc("get_uploads_by_share_token", { token });
+  if (error) throw error;
+  return (data || []).map(uploadFromDB);
+}
+
+export async function dbRegenerateShareToken(siteId) {
+  const { data, error } = await supabase.rpc("regenerate_share_token", { site_id: siteId });
+  if (error) throw error;
+  return data; // new token string
+}
