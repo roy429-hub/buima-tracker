@@ -24,7 +24,7 @@ create table if not exists public.sites (
   partner_name      text default '',
   currency          text default 'USD',
   active            boolean default true,
-  share_token       text unique default encode(gen_random_bytes(16), 'hex'),
+  share_token       text unique default replace(gen_random_uuid()::text, '-', ''),
   created_at        timestamptz default now(),
   updated_at        timestamptz default now()
 );

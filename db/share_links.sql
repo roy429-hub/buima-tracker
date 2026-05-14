@@ -80,7 +80,7 @@ security definer
 set search_path = public
 as $$
   update public.sites
-     set share_token = encode(gen_random_bytes(16), 'hex')
+     set share_token = replace(gen_random_uuid()::text, '-', '')
    where id = site_id
    returning share_token;
 $$;
