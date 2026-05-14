@@ -19,9 +19,6 @@ create table if not exists public.sites (
   cost_per_kwh      numeric default 0,
   capex             numeric default 0,
   opex_monthly      numeric default 0,
-  buima_split_pct   numeric default 100,
-  partner_split_pct numeric default 0,
-  partner_name      text default '',
   currency          text default 'USD',
   active            boolean default true,
   share_token       text unique default replace(gen_random_uuid()::text, '-', ''),
@@ -82,18 +79,17 @@ create policy "uploads_authenticated_all" on public.uploads
 -- =============================================================
 insert into public.sites
   (name, country, city, address, lat, lng, charger_id,
-   charging_fee, cost_per_kwh, capex, opex_monthly,
-   buima_split_pct, partner_split_pct, partner_name, currency)
+   charging_fee, cost_per_kwh, capex, opex_monthly, currency)
 select * from (values
   ('Restaurant Nieuwe Tijd — Duiven', 'Netherlands', 'Duiven',
    'Roggekamp 4, 6921 RC Duiven, Netherlands', 51.9477, 6.0214, 'ffa388af-cfa2-4a',
-   0.67, 0.21, 45000, 250, 70, 30, 'Zemovi (CPO)', 'EUR'),
+   0.67, 0.21, 45000, 250, 'EUR'),
   ('Buima HQ Demo — Taipei', 'Taiwan', 'Taipei',
    'Taipei 101, Xinyi District, Taipei, Taiwan', 25.0330, 121.5654, 'demo-taipei-01',
-   9.5, 3.5, 1400000, 8000, 100, 0, '', 'TWD'),
+   9.5, 3.5, 1400000, 8000, 'TWD'),
   ('Tokyo Pilot — Shibuya', 'Japan', 'Tokyo',
    'Shibuya Crossing, Shibuya City, Tokyo, Japan', 35.6595, 139.7004, 'demo-tokyo-01',
-   45, 22, 6000000, 35000, 60, 40, 'Local JV partner', 'JPY')
+   45, 22, 6000000, 35000, 'JPY')
 ) as v
 where not exists (select 1 from public.sites);
 

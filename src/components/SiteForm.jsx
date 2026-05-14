@@ -151,16 +151,6 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
           suffix={`${site.currency}/kWh`} hint="Electricity + location share per kWh." />
       </div>
 
-      <hr className="border-slate-200" />
-      <p className="text-xs font-bold text-brand uppercase tracking-wider">Partner / Split (internal reference)</p>
-      <p className="text-[11px] text-slate-500 -mt-2">Profit split with partner — not used in headline ROI calculations.</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label="Partner Name" value={site.partnerName} onChange={u("partnerName")}
-          placeholder="e.g., Zemovi (CPO)" />
-        <Field label="Buima Split" type="number" value={site.buimaSplitPct}
-          onChange={(v) => setSite({ ...site, buimaSplitPct: v, partnerSplitPct: 100 - v })} suffix="%" />
-      </div>
-
       <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
         <button onClick={onCancel} type="button"
           className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-bold">Cancel</button>

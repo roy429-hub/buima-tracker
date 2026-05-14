@@ -15,7 +15,6 @@ const blankSite = () => ({
   id: "", name: "", country: "", city: "", address: "",
   lat: 0, lng: 0, chargerId: "",
   chargingFee: 0, costPerKwh: 0, capex: 0, opexMonthly: 0,
-  buimaSplitPct: 70, partnerSplitPct: 30, partnerName: "",
   currency: "USD", active: true,
 });
 

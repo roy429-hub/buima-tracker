@@ -22,9 +22,6 @@ returns table (
   cost_per_kwh    numeric,
   capex           numeric,
   opex_monthly    numeric,
-  buima_split_pct numeric,
-  partner_split_pct numeric,
-  partner_name    text,
   currency        text,
   active          boolean
 )
@@ -34,7 +31,7 @@ set search_path = public
 as $$
   select id, name, country, city, address, lat, lng, charger_id,
          charging_fee, cost_per_kwh, capex, opex_monthly,
-         buima_split_pct, partner_split_pct, partner_name, currency, active
+         currency, active
     from public.sites
    where share_token = token and active = true
    limit 1;

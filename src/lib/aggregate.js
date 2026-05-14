@@ -91,8 +91,6 @@ export function aggregateSite(siteId, site) {
     fixedOpex: 0,       // opexPerDay × totalDays
     totalCost: 0,
     netProfit: 0,       // Revenue − variableCost − fixedOpex (this is the headline number)
-    buimaProfit: 0,     // split for reference only (not displayed prominently)
-    partnerProfit: 0,
     firstDate: null,
     lastDate: null,
     avgKwhPerDay: 0,
@@ -102,8 +100,6 @@ export function aggregateSite(siteId, site) {
     // USD totals (for cross-site aggregation)
     grossRevenueUSD: 0,
     netProfitUSD: 0,
-    buimaProfitUSD: 0,
-    partnerProfitUSD: 0,
     fixedOpexUSD: 0,
     capexUSD: toUSD(site.capex || 0, site.currency),
     roi: 0,             // %  = netProfit / capex (NO split applied)
@@ -157,15 +153,9 @@ export function aggregateSite(siteId, site) {
   totals.avgSessionsPerDay = totals.totalDays ? totals.totalSessions / totals.totalDays : 0;
   totals.avgKwhPerSession = totals.totalSessions ? totals.totalKwh / totals.totalSessions : 0;
 
-  // Split (kept for internal reference, not shown on War Room)
-  totals.buimaProfit   = totals.netProfit * (site.buimaSplitPct || 0) / 100;
-  totals.partnerProfit = totals.netProfit * (site.partnerSplitPct || 0) / 100;
-
   // USD conversions
   totals.grossRevenueUSD = toUSD(totals.grossRevenue, site.currency);
   totals.netProfitUSD    = toUSD(totals.netProfit,    site.currency);
-  totals.buimaProfitUSD  = toUSD(totals.buimaProfit,  site.currency);
-  totals.partnerProfitUSD = toUSD(totals.partnerProfit, site.currency);
   totals.fixedOpexUSD    = toUSD(totals.fixedOpex,    site.currency);
 
   // ROI: total net profit / total CAPEX  (no split adjustment)
