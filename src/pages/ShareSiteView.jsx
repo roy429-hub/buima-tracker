@@ -39,7 +39,7 @@ function aggregate(site, uploads) {
   const monthKey = (d) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
   const yearKey = (d) => `${d.getUTCFullYear()}`;
   const dayKey  = (d) => d.toISOString().slice(0, 10);
-  const bucket = (k, s) => s[k] || (s[k] = { key: k, kwh: 0, sessions: 0, revenue: 0, profit: 0 });
+  const bucket = (k, s) => s[k] || (s[k] = { key: k, kwh: 0, sessions: 0, minutes: 0, revenue: 0, profit: 0 });
 
   uploads.forEach(u => {
     const d = new Date(u.reportDate);
@@ -48,18 +48,19 @@ function aggregate(site, uploads) {
     const rev = kwh * (site.chargingFee || 0);
     const var_ = kwh * (site.costPerKwh || 0);
     const profit = rev - var_ - opexPerDay;
+    const minutes = (u.sessions || []).reduce((s, x) => s + (x.durationMin || 0), 0);
     totals.totalKwh += kwh;
     totals.totalSessions += sess;
     totals.totalC1 += (u.c1Sessions || 0);
     totals.totalC2 += (u.c2Sessions || 0);
     totals.grossRevenue += rev;
     totals.netProfit += profit;
-    totals.totalChargeMinutes += (u.sessions || []).reduce((s, x) => s + (x.durationMin || 0), 0);
+    totals.totalChargeMinutes += minutes;
     if (!totals.firstDate || d < totals.firstDate) totals.firstDate = d;
     if (!totals.lastDate || d > totals.lastDate) totals.lastDate = d;
     [[dayKey(d), byDay], [isoWeek(d), byWeek], [monthKey(d), byMonth], [yearKey(d), byYear]].forEach(([k, s]) => {
       const b = bucket(k, s);
-      b.kwh += kwh; b.sessions += sess; b.revenue += rev; b.profit += profit;
+      b.kwh += kwh; b.sessions += sess; b.minutes += minutes; b.revenue += rev; b.profit += profit;
     });
   });
   const finalize = (s) => Object.values(s).sort((a, b) => a.key.localeCompare(b.key));
@@ -70,7 +71,7 @@ function aggregate(site, uploads) {
   totals.roi = (site.capex || 0) > 0 ? (totals.netProfit / site.capex) * 100 : 0;
 
   // Gap-fillers — make missing days/weeks/months/years show as 0 instead of being skipped
-  const zero = (k) => ({ key: k, kwh: 0, sessions: 0, revenue: 0, profit: 0 });
+  const zero = (k) => ({ key: k, kwh: 0, sessions: 0, minutes: 0, revenue: 0, profit: 0 });
   const fillDays = (arr) => {
     if (!totals.firstDate || !totals.lastDate) return arr;
     const map = new Map(arr.map(b => [b.key, b]));
@@ -278,11 +279,13 @@ export default function ShareSiteView() {
                     <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
                     <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
                     <YAxis yAxisId="cars" orientation="right" hide />
+                    <YAxis yAxisId="time" orientation="right" hide />
                     <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #1e293b", background: "#0f172a", fontSize: 12 }}
                       labelStyle={{ color: "#cbd5e1", fontWeight: "bold" }}
                       formatter={(v, n) => {
                         if (n === "kWh") return [fmt(v, 1), n];
                         if (n === "Cars Served") return [fmt0(v), n];
+                        if (n === "Hours Charged") return [`${fmt(v, 1)} h`, n];
                         return [`${sym}${fmt0(v)}`, n];
                       }} />
                     <Legend wrapperStyle={{ fontSize: 12, color: "#cbd5e1" }} />
@@ -290,6 +293,7 @@ export default function ShareSiteView() {
                     <Line yAxisId="right" type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={2.5} name="Net Profit" dot={{ r: 3, fill: "#10b981" }} />
                     <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#94a3b8" strokeWidth={2} strokeDasharray="4 4" name="Revenue" dot={{ r: 3, fill: "#94a3b8" }} />
                     <Line yAxisId="cars" type="monotone" dataKey="sessions" stroke="#60a5fa" strokeWidth={2} name="Cars Served" dot={{ r: 3, fill: "#60a5fa" }} />
+                    <Line yAxisId="time" type="monotone" dataKey={(b) => (b.minutes || 0) / 60} stroke="#f59e0b" strokeWidth={2} strokeDasharray="2 3" name="Hours Charged" dot={{ r: 2.5, fill: "#f59e0b" }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               )}

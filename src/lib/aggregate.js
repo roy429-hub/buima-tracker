@@ -15,7 +15,7 @@ const yearKey  = (d) => `${d.getUTCFullYear()}`;
 const dayKey   = (d) => d.toISOString().slice(0, 10);
 
 // ── Gap-fillers: insert zero buckets for any missing periods between firstDate and lastDate ──
-const zeroBucket = (key) => ({ key, kwh: 0, sessions: 0, c1: 0, c2: 0, revenue: 0, cost: 0, opex: 0, profit: 0, days: 0 });
+const zeroBucket = (key) => ({ key, kwh: 0, sessions: 0, c1: 0, c2: 0, minutes: 0, revenue: 0, cost: 0, opex: 0, profit: 0, days: 0 });
 
 function fillDaily(series, firstDate, lastDate) {
   if (!firstDate || !lastDate) return series;
@@ -112,7 +112,7 @@ export function aggregateSite(siteId, site) {
   const byDay = {}, byWeek = {}, byMonth = {}, byYear = {};
 
   const bucket = (k, store) => store[k] || (store[k] = {
-    key: k, kwh: 0, sessions: 0, c1: 0, c2: 0,
+    key: k, kwh: 0, sessions: 0, c1: 0, c2: 0, minutes: 0,
     revenue: 0, cost: 0, opex: 0, profit: 0, days: new Set(),
   });
 
@@ -144,6 +144,7 @@ export function aggregateSite(siteId, site) {
     [[dayKey(d), byDay], [isoWeek(d), byWeek], [monthKey(d), byMonth], [yearKey(d), byYear]].forEach(([k, store]) => {
       const b = bucket(k, store);
       b.kwh += kwh; b.sessions += sess; b.c1 += c1; b.c2 += c2;
+      b.minutes += minutes;
       b.revenue += rev; b.cost += varCost; b.opex += fixedDay;
       b.profit += profit;
       b.days.add(dayKey(d));
