@@ -14,6 +14,67 @@ const monthKey = (d) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).pad
 const yearKey  = (d) => `${d.getUTCFullYear()}`;
 const dayKey   = (d) => d.toISOString().slice(0, 10);
 
+// ── Gap-fillers: insert zero buckets for any missing periods between firstDate and lastDate ──
+const zeroBucket = (key) => ({ key, kwh: 0, sessions: 0, c1: 0, c2: 0, revenue: 0, cost: 0, opex: 0, profit: 0, days: 0 });
+
+function fillDaily(series, firstDate, lastDate) {
+  if (!firstDate || !lastDate) return series;
+  const byKey = new Map(series.map(b => [b.key, b]));
+  const out = [];
+  const cur = new Date(Date.UTC(firstDate.getUTCFullYear(), firstDate.getUTCMonth(), firstDate.getUTCDate()));
+  const end = new Date(Date.UTC(lastDate.getUTCFullYear(), lastDate.getUTCMonth(), lastDate.getUTCDate()));
+  while (cur <= end) {
+    const k = cur.toISOString().slice(0, 10);
+    out.push(byKey.get(k) || zeroBucket(k));
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+  return out;
+}
+
+function fillWeekly(series, firstDate, lastDate) {
+  if (!firstDate || !lastDate) return series;
+  const byKey = new Map(series.map(b => [b.key, b]));
+  const out = [];
+  // Snap firstDate to its Monday-of-week
+  const start = new Date(Date.UTC(firstDate.getUTCFullYear(), firstDate.getUTCMonth(), firstDate.getUTCDate()));
+  start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7)); // back to Monday
+  const end = new Date(Date.UTC(lastDate.getUTCFullYear(), lastDate.getUTCMonth(), lastDate.getUTCDate()));
+  const cur = new Date(start);
+  while (cur <= end) {
+    const k = isoWeek(cur);
+    out.push(byKey.get(k) || zeroBucket(k));
+    cur.setUTCDate(cur.getUTCDate() + 7);
+  }
+  // dedupe (in case of edge cases)
+  const seen = new Set();
+  return out.filter(b => seen.has(b.key) ? false : (seen.add(b.key), true));
+}
+
+function fillMonthly(series, firstDate, lastDate) {
+  if (!firstDate || !lastDate) return series;
+  const byKey = new Map(series.map(b => [b.key, b]));
+  const out = [];
+  const cur = new Date(Date.UTC(firstDate.getUTCFullYear(), firstDate.getUTCMonth(), 1));
+  const end = new Date(Date.UTC(lastDate.getUTCFullYear(), lastDate.getUTCMonth(), 1));
+  while (cur <= end) {
+    const k = monthKey(cur);
+    out.push(byKey.get(k) || zeroBucket(k));
+    cur.setUTCMonth(cur.getUTCMonth() + 1);
+  }
+  return out;
+}
+
+function fillYearly(series, firstDate, lastDate) {
+  if (!firstDate || !lastDate) return series;
+  const byKey = new Map(series.map(b => [b.key, b]));
+  const out = [];
+  for (let y = firstDate.getUTCFullYear(); y <= lastDate.getUTCFullYear(); y++) {
+    const k = String(y);
+    out.push(byKey.get(k) || zeroBucket(k));
+  }
+  return out;
+}
+
 export function aggregateSite(siteId, site) {
   const uploads = getUploadsForSite(siteId);
   // OPEX is monthly, allocate per day → / ~30.42 (avg days/month)
@@ -109,12 +170,17 @@ export function aggregateSite(siteId, site) {
   // ROI: total net profit / total CAPEX  (no split adjustment)
   totals.roi = (site.capex || 0) > 0 ? (totals.netProfit / site.capex) * 100 : 0;
 
+  const dailyRaw   = finalize(byDay);
+  const weeklyRaw  = finalize(byWeek);
+  const monthlyRaw = finalize(byMonth);
+  const yearlyRaw  = finalize(byYear);
+
   return {
     totals,
-    daily:   finalize(byDay),
-    weekly:  finalize(byWeek),
-    monthly: finalize(byMonth),
-    yearly:  finalize(byYear),
+    daily:   fillDaily(dailyRaw,     totals.firstDate, totals.lastDate),
+    weekly:  fillWeekly(weeklyRaw,   totals.firstDate, totals.lastDate),
+    monthly: fillMonthly(monthlyRaw, totals.firstDate, totals.lastDate),
+    yearly:  fillYearly(yearlyRaw,   totals.firstDate, totals.lastDate),
     uploads: uploads.sort((a, b) => b.reportDate.localeCompare(a.reportDate)),
   };
 }

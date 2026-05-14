@@ -68,7 +68,57 @@ function aggregate(site, uploads) {
   totals.grossRevenueUSD = toUSD(totals.grossRevenue, site.currency);
   totals.netProfitUSD = toUSD(totals.netProfit, site.currency);
   totals.roi = (site.capex || 0) > 0 ? (totals.netProfit / site.capex) * 100 : 0;
-  return { totals, daily: finalize(byDay), weekly: finalize(byWeek), monthly: finalize(byMonth), yearly: finalize(byYear) };
+
+  // Gap-fillers — make missing days/weeks/months/years show as 0 instead of being skipped
+  const zero = (k) => ({ key: k, kwh: 0, sessions: 0, revenue: 0, profit: 0 });
+  const fillDays = (arr) => {
+    if (!totals.firstDate || !totals.lastDate) return arr;
+    const map = new Map(arr.map(b => [b.key, b]));
+    const out = [];
+    const cur = new Date(Date.UTC(totals.firstDate.getUTCFullYear(), totals.firstDate.getUTCMonth(), totals.firstDate.getUTCDate()));
+    const end = new Date(Date.UTC(totals.lastDate.getUTCFullYear(), totals.lastDate.getUTCMonth(), totals.lastDate.getUTCDate()));
+    while (cur <= end) { const k = cur.toISOString().slice(0,10); out.push(map.get(k) || zero(k)); cur.setUTCDate(cur.getUTCDate()+1); }
+    return out;
+  };
+  const fillWeeks = (arr) => {
+    if (!totals.firstDate || !totals.lastDate) return arr;
+    const map = new Map(arr.map(b => [b.key, b]));
+    const out = []; const seen = new Set();
+    const cur = new Date(Date.UTC(totals.firstDate.getUTCFullYear(), totals.firstDate.getUTCMonth(), totals.firstDate.getUTCDate()));
+    cur.setUTCDate(cur.getUTCDate() - ((cur.getUTCDay() + 6) % 7));
+    while (cur <= totals.lastDate) {
+      const k = isoWeek(cur);
+      if (!seen.has(k)) { out.push(map.get(k) || zero(k)); seen.add(k); }
+      cur.setUTCDate(cur.getUTCDate() + 7);
+    }
+    return out;
+  };
+  const fillMonths = (arr) => {
+    if (!totals.firstDate || !totals.lastDate) return arr;
+    const map = new Map(arr.map(b => [b.key, b]));
+    const out = [];
+    const cur = new Date(Date.UTC(totals.firstDate.getUTCFullYear(), totals.firstDate.getUTCMonth(), 1));
+    const end = new Date(Date.UTC(totals.lastDate.getUTCFullYear(), totals.lastDate.getUTCMonth(), 1));
+    while (cur <= end) { const k = monthKey(cur); out.push(map.get(k) || zero(k)); cur.setUTCMonth(cur.getUTCMonth()+1); }
+    return out;
+  };
+  const fillYears = (arr) => {
+    if (!totals.firstDate || !totals.lastDate) return arr;
+    const map = new Map(arr.map(b => [b.key, b]));
+    const out = [];
+    for (let y = totals.firstDate.getUTCFullYear(); y <= totals.lastDate.getUTCFullYear(); y++) {
+      const k = String(y); out.push(map.get(k) || zero(k));
+    }
+    return out;
+  };
+
+  return {
+    totals,
+    daily:   fillDays(finalize(byDay)),
+    weekly:  fillWeeks(finalize(byWeek)),
+    monthly: fillMonths(finalize(byMonth)),
+    yearly:  fillYears(finalize(byYear)),
+  };
 }
 
 export default function ShareSiteView() {
