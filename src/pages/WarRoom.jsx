@@ -338,7 +338,7 @@ export default function WarRoom() {
                     <th className="px-4 py-3 text-right font-bold">Revenue (USD)</th>
                     <th className="px-4 py-3 text-right font-bold">OPEX (USD)</th>
                     <th className="px-4 py-3 text-right font-bold">Net Profit (USD)</th>
-                    <th className="px-4 py-3 text-right font-bold">ROI</th>
+                    <th className="px-4 py-3 text-right font-bold">Annualized ROI</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -365,8 +365,15 @@ export default function WarRoom() {
                         <td className="px-4 py-3 text-right text-slate-300 tabular-nums">{fmtUSD(t.grossRevenueUSD)}</td>
                         <td className="px-4 py-3 text-right text-amber-400 tabular-nums">{fmtUSD(t.fixedOpexUSD)}</td>
                         <td className="px-4 py-3 text-right font-bold text-emerald-400 tabular-nums">{fmtUSD(t.netProfitUSD)}</td>
-                        <td className={`px-4 py-3 text-right font-bold tabular-nums ${t.roi >= 100 ? "text-emerald-400" : t.roi >= 50 ? "text-amber-400" : "text-slate-400"}`}>
-                          {site.capex > 0 ? `${fmt(t.roi, 1)}%` : "—"}
+                        <td className={`px-4 py-3 text-right font-bold tabular-nums ${t.annualizedRoi >= 15 ? "text-emerald-400" : t.annualizedRoi >= 5 ? "text-amber-400" : "text-slate-400"}`}>
+                          {site.capex > 0 ? (
+                            <>
+                              {fmt(t.annualizedRoi, 1)}%
+                              <div className="text-[9px] text-slate-500 font-normal">
+                                {t.paybackYears != null && t.paybackYears < 100 ? `payback ${fmt(t.paybackYears, 1)} yrs` : "payback >100 yrs"}
+                              </div>
+                            </>
+                          ) : "—"}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button onClick={() => setUploadTarget(site)}

@@ -157,7 +157,16 @@ export default function SiteDashboard() {
             <HeroKPI label="kWh Delivered" value={fmtCompact(t.totalKwh)} sub={`avg ${fmt0(t.avgKwhPerDay)} kWh / day`} icon={Zap} />
             <HeroKPI label="Revenue" value={`${sym}${fmtCompact(t.grossRevenue)}`} sub={fmtUSD(t.grossRevenueUSD) + " USD"} icon={DollarSign} />
             <HeroKPI label="Net Profit" value={`${sym}${fmtCompact(t.netProfit)}`} sub={fmtUSD(t.netProfitUSD) + " USD"} icon={TrendingUp} highlight />
-            <HeroKPI label="ROI" value={site.capex > 0 ? `${fmt(t.roi, 1)}%` : "—"} sub={site.capex > 0 ? `vs. ${sym}${fmtCompact(site.capex)} CAPEX` : "Set CAPEX"} icon={Sparkles} highlight={t.roi >= 100} />
+            <HeroKPI
+              label="Annualized ROI"
+              value={site.capex > 0 ? `${fmt(t.annualizedRoi, 1)}%` : "—"}
+              sub={site.capex > 0
+                ? (t.paybackYears != null && t.paybackYears < 100
+                    ? `Payback ${fmt(t.paybackYears, 1)} yrs · ${fmt(t.roi, 1)}% recovered`
+                    : `${fmt(t.roi, 1)}% recovered · payback >100 yrs`)
+                : "Set CAPEX"}
+              icon={Sparkles}
+              highlight={t.annualizedRoi >= 10} />
             <HeroKPI label="Utilization" value={`${fmt(utilization, 1)}%`} sub={`${fmt0(t.totalChargeMinutes / 60)}h charging`} icon={Clock} />
           </div>
 

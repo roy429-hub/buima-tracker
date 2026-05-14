@@ -171,6 +171,11 @@ export function aggregateSite(siteId, site) {
   // ROI: total net profit / total CAPEX  (no split adjustment)
   totals.roi = (site.capex || 0) > 0 ? (totals.netProfit / site.capex) * 100 : 0;
 
+  // Annualized profit + ROI + payback period
+  totals.annualizedProfit = totals.totalDays > 0 ? (totals.netProfit / totals.totalDays) * 365 : 0;
+  totals.annualizedRoi    = (site.capex || 0) > 0 ? (totals.annualizedProfit / site.capex) * 100 : 0;
+  totals.paybackYears     = totals.annualizedProfit > 0 ? site.capex / totals.annualizedProfit : null;
+
   const dailyRaw   = finalize(byDay);
   const weeklyRaw  = finalize(byWeek);
   const monthlyRaw = finalize(byMonth);
