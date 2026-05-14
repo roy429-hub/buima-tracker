@@ -13,6 +13,7 @@ import { useStorageVersion } from "../lib/useStorage";
 import { dbRegenerateShareToken } from "../lib/supabase";
 import UploadDropzone from "../components/UploadDropzone";
 import LiveClock from "../components/LiveClock";
+import { SiteFormModal } from "../components/SiteForm";
 
 const PERIODS = [
   { id: "daily",   label: "Daily" },
@@ -26,6 +27,7 @@ export default function SiteDashboard() {
   const version = useStorageVersion();
   const site = getSite(id);
   const [period, setPeriod] = useState("daily");
+  const [editingSite, setEditingSite] = useState(false);
 
   const data = useMemo(() => aggregateSite(id, site), [id, site, version]);
 
@@ -135,16 +137,18 @@ export default function SiteDashboard() {
                   <span className="font-mono text-xs">{site.chargerId}</span>
                 </p>
               </div>
-              <Link to="/sites" className="bg-white/15 hover:bg-white/25 backdrop-blur rounded-md px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold transition-colors">
-                <Settings className="w-3.5 h-3.5" /> Settings
-              </Link>
+              <button onClick={() => setEditingSite(true)}
+                className="bg-white/15 hover:bg-white/25 backdrop-blur rounded-md px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold transition-colors">
+                <Settings className="w-3.5 h-3.5" /> Edit Site
+              </button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-5 border-t border-white/15 relative">
-              <SiteParam label="Charging Fee" value={`${sym}${fmt(site.chargingFee)}`} unit="/kWh" />
-              <SiteParam label="Variable Cost" value={`${sym}${fmt(site.costPerKwh)}`} unit="/kWh" />
-              <SiteParam label="OPEX" value={`${sym}${fmt0(site.opexMonthly)}`} unit="/month" />
-              <SiteParam label="CAPEX" value={`${sym}${fmtCompact(site.capex)}`} unit="total invest" />
+              <SiteParam label="Charging Fee" value={`${sym}${fmt(site.chargingFee)}`} unit="/kWh"   onClick={() => setEditingSite(true)} />
+              <SiteParam label="Variable Cost" value={`${sym}${fmt(site.costPerKwh)}`} unit="/kWh"   onClick={() => setEditingSite(true)} />
+              <SiteParam label="OPEX" value={`${sym}${fmt0(site.opexMonthly)}`} unit="/month"        onClick={() => setEditingSite(true)} />
+              <SiteParam label="CAPEX" value={`${sym}${fmtCompact(site.capex)}`} unit="total invest" onClick={() => setEditingSite(true)} />
             </div>
+            <p className="text-[10px] text-white/60 mt-3 relative">↑ Click any value to edit · or use the Edit Site button</p>
           </div>
 
           {/* HERO KPI ROW */}
@@ -360,19 +364,29 @@ export default function SiteDashboard() {
 
         </div>
       </div>
+
+      {editingSite && (
+        <SiteFormModal
+          site={site}
+          onClose={() => setEditingSite(false)}
+          onSaved={() => setEditingSite(false)}
+        />
+      )}
     </div>
   );
 }
 
 // ── Reusable styled components ──
-function SiteParam({ label, value, unit }) {
+function SiteParam({ label, value, unit, onClick }) {
   return (
-    <div>
-      <p className="text-[10px] uppercase tracking-[0.15em] opacity-70 font-bold mb-0.5">{label}</p>
-      <p className="font-mono text-lg font-black tabular-nums">
+    <button onClick={onClick} type="button"
+      className="text-left group cursor-pointer">
+      <p className="text-[10px] uppercase tracking-[0.15em] opacity-70 font-bold mb-0.5 group-hover:opacity-100 transition-opacity">{label}</p>
+      <p className="font-mono text-lg font-black tabular-nums group-hover:text-white/95 transition-colors">
         {value}<span className="text-xs font-normal opacity-60 ml-1">{unit}</span>
       </p>
-    </div>
+      <div className="h-0.5 w-0 group-hover:w-12 bg-white/70 transition-all mt-1"></div>
+    </button>
   );
 }
 
