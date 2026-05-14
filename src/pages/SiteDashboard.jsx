@@ -197,15 +197,21 @@ export default function SiteDashboard() {
                     <XAxis dataKey="key" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
                     <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
                     <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
+                    <YAxis yAxisId="cars" orientation="right" hide />
                     <Tooltip
                       contentStyle={{ borderRadius: 8, border: "1px solid #1e293b", background: "#0f172a", fontSize: 12 }}
                       labelStyle={{ color: "#cbd5e1", fontWeight: "bold" }}
-                      formatter={(v, n) => [n === "kWh" ? fmt(v, 1) : `${sym}${fmt0(v)}`, n]}
+                      formatter={(v, n) => {
+                        if (n === "kWh") return [fmt(v, 1), n];
+                        if (n === "Cars Served") return [fmt0(v), n];
+                        return [`${sym}${fmt0(v)}`, n];
+                      }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12, color: "#cbd5e1" }} />
                     <Bar yAxisId="left" dataKey="kwh" fill="#be123c" name="kWh" radius={[4, 4, 0, 0]} />
                     <Line yAxisId="right" type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={2.5} name="Net Profit" dot={{ r: 3, fill: "#10b981" }} />
                     <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#94a3b8" strokeWidth={2} strokeDasharray="4 4" name="Revenue" dot={{ r: 3, fill: "#94a3b8" }} />
+                    <Line yAxisId="cars" type="monotone" dataKey="sessions" stroke="#60a5fa" strokeWidth={2} name="Cars Served" dot={{ r: 3, fill: "#60a5fa" }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               )}
