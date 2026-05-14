@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import {
   Zap, TrendingUp, Activity, DollarSign, Battery, Clock, MapPin, Car,
-  Sparkles, BarChart3, Loader2, AlertCircle, ShieldCheck, Globe
+  Sparkles, BarChart3, Loader2, AlertCircle, ShieldCheck, Globe, ChevronRight
 } from "lucide-react";
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { dbFetchSiteByShareToken, dbFetchUploadsByShareToken } from "../lib/supabase";
@@ -346,20 +346,47 @@ export default function ShareSiteView() {
             </div>
           </div>
 
-          {/* Footer note */}
-          <div className="text-center pt-6 border-t border-slate-800 mt-8">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <img src="/logo.png" alt="" className="w-5 h-5 object-contain opacity-60" />
-              <span className="text-sm font-black text-white">BUIMA <span className="text-brand">ENERGY</span></span>
-            </div>
-            <p className="text-[11px] text-slate-500">
-              This is a read-only view secured by a unique share link. Data refreshes automatically as new reports are uploaded.
-            </p>
-            <p className="text-[10px] text-slate-600 mt-2 font-mono">© 2026 Buima Energy · All rights reserved</p>
-          </div>
-
         </div>
       </div>
+
+      {/* ── FOOTER (white, matches Layout) ─────────────────────── */}
+      <footer className="bg-white border-t border-slate-200">
+        <div className="h-[2px] bg-gradient-to-r from-transparent via-brand to-transparent opacity-60" />
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex items-start gap-3">
+            <img src="/logo.png" alt="" className="w-8 h-8 object-contain" />
+            <div>
+              <p className="text-sm font-black text-slate-900">BUIMA <span className="text-brand">ENERGY</span></p>
+              <p className="text-[11px] text-slate-500 mt-0.5 max-w-xs leading-relaxed">
+                Operating proprietary B.E.S.T (Battery Energy Storage Tile) systems with integrated DC fast charging across global installation sites.
+              </p>
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-700 mb-2">This View</p>
+            <ul className="space-y-1 text-xs">
+              <li className="flex items-center gap-2 text-slate-500">
+                <ChevronRight className="w-3 h-3 text-brand" />
+                <span>Read-only access via unique share link</span>
+              </li>
+              <li className="flex items-center gap-2 text-slate-500">
+                <ChevronRight className="w-3 h-3 text-brand" />
+                <span>Refreshes as new reports are uploaded</span>
+              </li>
+              <li className="flex items-center gap-2 text-slate-500">
+                <ChevronRight className="w-3 h-3 text-brand" />
+                <span>TLS-encrypted &middot; revocable on demand</span>
+              </li>
+            </ul>
+          </div>
+          <div className="md:text-right">
+            <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-700 mb-2">System</p>
+            <p className="text-xs text-slate-500 font-mono">Tracker v0.2 &middot; Investor Brief</p>
+            <p className="text-xs text-slate-500 font-mono">Updated {new Date().toISOString().slice(0,10)}</p>
+            <p className="text-[10px] text-slate-400 mt-3">&copy; 2026 Buima Energy &middot; All rights reserved</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
