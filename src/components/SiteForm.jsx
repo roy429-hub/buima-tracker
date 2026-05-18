@@ -48,6 +48,7 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
     coords: site.lat && site.lng ? { lat: site.lat, lng: site.lng } : null,
   });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const lookupAddress = async () => {
     if (!site.address?.trim()) {
@@ -84,6 +85,7 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
     }
 
     setSaving(true);
+    setSaveError("");
     try {
       await upsertSite({
         ...site,
@@ -94,7 +96,12 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
       });
       onSaved?.();
     } catch (e) {
-      setGeo({ status: "error", message: e.message || "Save failed", coords: null });
+      console.error("Site save failed:", e);
+      const msg = e.message || String(e) || "Save failed";
+      const hint = /contract_years/i.test(msg)
+        ? " — your Supabase database needs migration 004 (add contract_years column). Run db/migrations/004_add_contract_years.sql in the SQL Editor."
+        : "";
+      setSaveError(msg + hint);
     } finally {
       setSaving(false);
     }
@@ -152,6 +159,16 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
         <Field label="Variable Cost per kWh" type="number" value={site.costPerKwh} onChange={u("costPerKwh")}
           suffix={`${site.currency}/kWh`} hint="Electricity + location share per kWh." />
       </div>
+
+      {saveError && (
+        <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-bold">Could not save:</p>
+            <p className="text-xs mt-0.5 break-words">{saveError}</p>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
         <button onClick={onCancel} type="button"
