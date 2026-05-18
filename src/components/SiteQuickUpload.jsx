@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { X, Upload, MapPin } from "lucide-react";
 import UploadDropzone from "./UploadDropzone";
 import { addUpload } from "../lib/storage";
@@ -25,9 +25,18 @@ export default function SiteQuickUpload({ site, onClose, onDone }) {
     }
   };
 
+  const mouseDownOnBackdrop = useRef(false);
+
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onMouseDown={(e) => { mouseDownOnBackdrop.current = (e.target === e.currentTarget); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && mouseDownOnBackdrop.current) onClose();
+        mouseDownOnBackdrop.current = false;
+      }}>
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}>
         <div className="bg-gradient-to-r from-brand to-brand-dark px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 text-white min-w-0">
             <Upload className="w-5 h-5 flex-shrink-0" />

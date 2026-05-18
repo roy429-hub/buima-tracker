@@ -158,7 +158,7 @@ export default function SiteDashboard() {
               <SiteParam label="Variable Cost" value={`${sym}${fmt(site.costPerKwh)}`} unit="/kWh"   onClick={() => setEditingSite(true)} />
               <SiteParam label="OPEX" value={`${sym}${fmt0(site.opexMonthly)}`} unit="/month"        onClick={() => setEditingSite(true)} />
               <SiteParam label="Setup Cost" value={`${sym}${fmtCompact(site.capex)}`} unit="CAPEX"  onClick={() => setEditingSite(true)} />
-              <SiteParam label="Contract" value={site.contractYears || "—"} unit="years"            onClick={() => setEditingSite(true)} />
+              <SiteParam label="Contract" value={site.contractYears > 0 ? site.contractYears : "—"} unit={site.contractYears > 0 ? "years" : "(none)"} onClick={() => setEditingSite(true)} />
             </div>
             <p className="text-[10px] text-white/60 mt-3 relative">↑ Click any value to edit · or use the Edit Site button</p>
           </div>

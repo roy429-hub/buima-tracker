@@ -1,20 +1,38 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { X, MapPin, Loader2, CheckCircle2, AlertCircle, Settings } from "lucide-react";
 import { upsertSite } from "../lib/storage";
 import { geocodeAddress } from "../lib/geocode";
 
 export function SiteFormModal({ site, onClose, onSaved }) {
   const [current, setCurrent] = useState(site);
+  // Track whether the mousedown started on the backdrop. We only close
+  // if BOTH mousedown and click happened directly on the backdrop, never
+  // because a drag/release fired inside the modal content. This prevents
+  // accidental closures from number-input spinners, text selection, etc.
+  const mouseDownOnBackdrop = useRef(false);
+
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onMouseDown={(e) => { mouseDownOnBackdrop.current = (e.target === e.currentTarget); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && mouseDownOnBackdrop.current) {
+          onClose();
+        }
+        mouseDownOnBackdrop.current = false;
+      }}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sticky top-0 bg-gradient-to-r from-slate-950 to-slate-900 text-white px-6 py-4 flex justify-between items-center z-10 border-b border-slate-700">
           <h3 className="font-bold flex items-center gap-2">
             <Settings className="w-4 h-4 text-brand" />
             <span>Site Configuration</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-6">
           <SiteForm site={current} setSite={setCurrent} onSaved={onSaved} onCancel={onClose} />

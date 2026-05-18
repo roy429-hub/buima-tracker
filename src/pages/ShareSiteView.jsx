@@ -240,7 +240,7 @@ export default function ShareSiteView() {
                 <Param label="Variable Cost" value={`${sym}${fmt(site.costPerKwh)}`} unit="/kWh" />
                 <Param label="OPEX" value={`${sym}${fmt0(site.opexMonthly)}`} unit="/month" />
                 <Param label="Setup Cost" value={`${sym}${fmtCompact(site.capex)}`} unit="CAPEX" />
-                <Param label="Contract" value={site.contractYears || "—"} unit="years" />
+                <Param label="Contract" value={site.contractYears > 0 ? site.contractYears : "—"} unit={site.contractYears > 0 ? "years" : "(none)"} />
               </div>
             </div>
           </div>
