@@ -7,10 +7,9 @@ export default function LiveClock() {
     return () => clearInterval(t);
   }, []);
 
-  const time = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  const date = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
-  const utc  = now.toISOString().slice(11, 19) + " UTC";
-  const tz   = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  // Display everything in UTC — global ops convention, no ambiguity across regions.
+  const time = now.toISOString().slice(11, 19);              // HH:MM:SS
+  const date = now.toUTCString().slice(0, 16);               // "Wed, 14 May 2026"
 
   return (
     <div className="flex items-center gap-3">
@@ -22,8 +21,10 @@ export default function LiveClock() {
         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">Live</span>
       </div>
       <div className="text-right font-mono">
-        <p className="text-base font-bold text-white leading-tight tabular-nums">{time}</p>
-        <p className="text-[10px] text-slate-400 leading-tight">{date} · {tz}</p>
+        <p className="text-base font-bold text-white leading-tight tabular-nums">
+          {time} <span className="text-[10px] text-slate-400 font-normal">UTC</span>
+        </p>
+        <p className="text-[10px] text-slate-400 leading-tight">{date}</p>
       </div>
     </div>
   );
