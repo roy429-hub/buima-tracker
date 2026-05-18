@@ -149,11 +149,11 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
         <Field label="Currency (3-letter)" value={site.currency} onChange={u("currency")}
           hint="USD, EUR, GBP, JPY, TWD, CNY, AUD, CAD…" />
         <Field label="Setup Cost / CAPEX" type="number" value={site.capex} onChange={u("capex")}
-          suffix={site.currency} hint="One-time upfront installation cost. Used for ROI + payback." />
+          suffix={site.currency} hint="One-time upfront installation cost. Set to 0 to hide / mark undisclosed." />
         <Field label="Contract Years" type="number" value={site.contractYears} onChange={u("contractYears")}
-          suffix="years" hint="Length of the operating contract. Used to assess if payback fits within contract." />
+          suffix="years" hint="0 = no contract. Otherwise used to flag if payback exceeds contract length." />
         <Field label="OPEX (Monthly Fixed Cost)" type="number" value={site.opexMonthly} onChange={u("opexMonthly")}
-          suffix={`${site.currency}/mo`} hint="Rent, maintenance, comms — subtracted from net profit." />
+          suffix={`${site.currency}/mo`} hint="Rent, maintenance, comms. Set to 0 if none or undisclosed." />
         <Field label="Charging Fee" type="number" value={site.chargingFee} onChange={u("chargingFee")}
           suffix={`${site.currency}/kWh`} hint="What customer pays per kWh." />
         <Field label="Variable Cost per kWh" type="number" value={site.costPerKwh} onChange={u("costPerKwh")}

@@ -50,13 +50,17 @@ const siteToDB = (s) => ({
   charger_id: s.chargerId || "",
   charging_fee: s.chargingFee || 0,
   cost_per_kwh: s.costPerKwh || 0,
-  capex: s.capex || 0,
-  opex_monthly: s.opexMonthly || 0,
-  contract_years: s.contractYears || 10,
-  partner_name: s.partnerName || "",
-  partner_email: s.partnerEmail || "",
-  buima_split_pct: s.buimaSplitPct !== undefined ? s.buimaSplitPct : 100,
-  partner_split_pct: s.partnerSplitPct !== undefined ? s.partnerSplitPct : 0,
+  // Use ?? (nullish coalescing) so explicit 0 values are preserved.
+  // Sites may legitimately have CAPEX=0 (e.g., NDA / undisclosed) or
+  // contract_years=0 (no formal contract). Defaults only fire when value
+  // is null/undefined.
+  capex:           s.capex           ?? 0,
+  opex_monthly:    s.opexMonthly     ?? 0,
+  contract_years:  s.contractYears   ?? 0,
+  partner_name:    s.partnerName     ?? "",
+  partner_email:   s.partnerEmail    ?? "",
+  buima_split_pct:   s.buimaSplitPct   ?? 100,
+  partner_split_pct: s.partnerSplitPct ?? 0,
   currency: s.currency || "USD",
   active: s.active !== false,
 });
