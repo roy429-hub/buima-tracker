@@ -66,7 +66,7 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
     coords: site.lat && site.lng ? { lat: site.lat, lng: site.lng } : null,
   });
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState("");
+  const [saveError, setSaveError] = useState(null); // { message, sqlFix } | null
 
   const lookupAddress = async () => {
     if (!site.address?.trim()) {
@@ -103,7 +103,7 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
     }
 
     setSaving(true);
-    setSaveError("");
+    setSaveError(null);
     try {
       await upsertSite({
         ...site,
@@ -116,20 +116,17 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
     } catch (e) {
       console.error("Site save failed:", e);
       const msg = e.message || String(e) || "Save failed";
-      let hint = "";
+      let sqlFix = "";
       if (/contract_years/i.test(msg)) {
-        hint = " — Run migration 004 in Supabase SQL Editor: " +
-          "ALTER TABLE public.sites ADD COLUMN IF NOT EXISTS contract_years integer DEFAULT 10;";
+        sqlFix = `ALTER TABLE public.sites ADD COLUMN IF NOT EXISTS contract_years integer DEFAULT 10;`;
       } else if (/partner_name|partner_email|buima_split_pct|partner_split_pct/i.test(msg)) {
-        hint = " — Run migration 005 in Supabase SQL Editor: " +
-          "ALTER TABLE public.sites ADD COLUMN IF NOT EXISTS partner_name text DEFAULT ''; " +
-          "ADD COLUMN IF NOT EXISTS partner_email text DEFAULT ''; " +
-          "ADD COLUMN IF NOT EXISTS buima_split_pct numeric DEFAULT 100; " +
-          "ADD COLUMN IF NOT EXISTS partner_split_pct numeric DEFAULT 0;";
-      } else if (/schema cache|column .* of .* in the schema/i.test(msg)) {
-        hint = " — Looks like a Supabase schema/cache issue. Try waiting 10 seconds and retrying, or check db/migrations/ for the latest SQL to run.";
+        sqlFix = `ALTER TABLE public.sites
+  ADD COLUMN IF NOT EXISTS partner_name      text    DEFAULT '',
+  ADD COLUMN IF NOT EXISTS partner_email     text    DEFAULT '',
+  ADD COLUMN IF NOT EXISTS buima_split_pct   numeric DEFAULT 100,
+  ADD COLUMN IF NOT EXISTS partner_split_pct numeric DEFAULT 0;`;
       }
-      setSaveError(msg + hint);
+      setSaveError({ message: msg, sqlFix });
     } finally {
       setSaving(false);
     }
@@ -207,9 +204,22 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
       {saveError && (
         <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="font-bold">Could not save:</p>
-            <p className="text-xs mt-0.5 break-words">{saveError}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold">Could not save</p>
+            <p className="text-xs mt-0.5 break-words">{saveError.message}</p>
+            {saveError.sqlFix && (
+              <div className="mt-3 bg-slate-900 border border-slate-700 rounded p-2.5">
+                <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5">
+                  Copy &amp; paste this in Supabase SQL Editor, then retry:
+                </p>
+                <pre className="text-[11px] text-emerald-300 font-mono whitespace-pre-wrap break-all leading-tight">{saveError.sqlFix}</pre>
+                <button type="button"
+                  onClick={() => { navigator.clipboard.writeText(saveError.sqlFix); }}
+                  className="mt-2 text-[10px] uppercase tracking-wider font-bold text-brand hover:text-brand-dark">
+                  📋 Copy SQL
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
