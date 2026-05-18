@@ -81,10 +81,10 @@ export default function WarRoom() {
     return { tag: "offline", color: "text-red-400", dot: "bg-red-500", label: "Offline" };
   };
 
-  // ── Best ROI holding ──
+  // ── Best ROI holding (by current %-recovered) ──
   const topSite = [...data.perSite]
-    .filter(p => p.site.capex > 0 && p.agg.totals.annualizedRoi > 0)
-    .sort((a, b) => b.agg.totals.annualizedRoi - a.agg.totals.annualizedRoi)[0];
+    .filter(p => p.site.capex > 0 && p.agg.totals.roi > 0)
+    .sort((a, b) => b.agg.totals.roi - a.agg.totals.roi)[0];
 
   // ── Total Cars Served ≈ total sessions (each session = 1 car) ──
   const totalCars = data.totalSessions;
@@ -137,11 +137,11 @@ export default function WarRoom() {
                 `Lifetime ${fmtUSD(data.totalProfitUSD)}`
               ]}
               icon={TrendingUp} />
-            <HeroKPI label="Annualized ROI"
-              value={`${fmt(data.portfolioAnnualizedROI, 1)}%`}
+            <HeroKPI label="Current ROI"
+              value={`${fmt(data.portfolioROI, 1)}%`}
               subLines={[
-                `Annualized ${fmtUSD(data.totalAnnualizedProfitUSD)} / yr`,
-                `${fmt(data.portfolioROI, 1)}% recovered to date`
+                `${fmt(data.portfolioAnnualizedROI, 1)}% annualized`,
+                `${fmtUSD(data.totalProfitUSD)} of ${fmtUSD(data.totalCapexUSD)} recovered`
               ]}
               icon={Sparkles} />
             <HeroKPI label="Portfolio Payback"
@@ -226,9 +226,12 @@ export default function WarRoom() {
                             <span className="text-slate-500">
                               ROI:{" "}
                               {site.capex > 0 ? (
-                                <span className={`font-bold ${t.annualizedRoi >= 15 ? "text-emerald-400" : t.annualizedRoi >= 5 ? "text-amber-400" : "text-slate-400"}`}>
-                                  {fmt(t.annualizedRoi, 1)}%
-                                </span>
+                                <>
+                                  <span className={`font-bold ${t.roi >= 100 ? "text-emerald-400" : t.roi >= 25 ? "text-amber-400" : "text-slate-300"}`}>
+                                    {fmt(t.roi, 1)}%
+                                  </span>
+                                  <span className="text-slate-600"> (ann {fmt(t.annualizedRoi, 1)}%)</span>
+                                </>
                               ) : <span className="text-slate-600">—</span>}
                             </span>
                           </div>
@@ -340,8 +343,8 @@ export default function WarRoom() {
                     <p className="text-[10px] text-slate-500 mb-3">{topSite.site.city} · {topSite.site.country}</p>
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
-                        <p className="font-mono text-lg font-black text-emerald-400 tabular-nums">{fmt(topSite.agg.totals.annualizedRoi, 1)}%</p>
-                        <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Annualized ROI</p>
+                        <p className="font-mono text-lg font-black text-emerald-400 tabular-nums">{fmt(topSite.agg.totals.roi, 1)}%</p>
+                        <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Current ROI</p>
                       </div>
                       <div>
                         <p className="font-mono text-lg font-black text-brand tabular-nums">
@@ -464,7 +467,7 @@ export default function WarRoom() {
                     <th className="px-4 py-3 text-right font-bold">Cars</th>
                     <th className="px-4 py-3 text-right font-bold">Monthly Rev</th>
                     <th className="px-4 py-3 text-right font-bold">Monthly Profit</th>
-                    <th className="px-4 py-3 text-right font-bold">Annualized ROI</th>
+                    <th className="px-4 py-3 text-right font-bold">Current ROI</th>
                     <th className="px-4 py-3 text-right font-bold">Payback</th>
                     <th className="px-4 py-3"></th>
                   </tr>
@@ -491,8 +494,13 @@ export default function WarRoom() {
                         <td className="px-4 py-3 text-right text-slate-300 tabular-nums">{fmt0(t.totalSessions)}</td>
                         <td className="px-4 py-3 text-right text-slate-300 tabular-nums">{fmtUSD(t.monthlyAvgRevenueUSD)}</td>
                         <td className="px-4 py-3 text-right font-bold text-emerald-400 tabular-nums">{fmtUSD(t.monthlyAvgProfitUSD)}</td>
-                        <td className={`px-4 py-3 text-right font-bold tabular-nums ${t.annualizedRoi >= 15 ? "text-emerald-400" : t.annualizedRoi >= 5 ? "text-amber-400" : "text-slate-400"}`}>
-                          {site.capex > 0 ? `${fmt(t.annualizedRoi, 1)}%` : "—"}
+                        <td className={`px-4 py-3 text-right font-bold tabular-nums ${t.roi >= 100 ? "text-emerald-400" : t.roi >= 25 ? "text-amber-400" : "text-slate-400"}`}>
+                          {site.capex > 0 ? (
+                            <>
+                              {fmt(t.roi, 1)}%
+                              <div className="text-[9px] text-slate-500 font-normal">ann {fmt(t.annualizedRoi, 1)}%</div>
+                            </>
+                          ) : "—"}
                         </td>
                         <td className={`px-4 py-3 text-right tabular-nums ${paybackOverContract ? "text-red-400" : "text-slate-300"}`}>
                           {t.paybackMonths != null && t.paybackMonths < 1200 ? (

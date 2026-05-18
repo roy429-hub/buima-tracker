@@ -100,21 +100,21 @@ export default function Sites() {
                     <Stat label="Net Profit" value={`${sym}${fmtCompact(agg.netProfit)}`} sub={fmtUSD(agg.netProfitUSD)} icon={TrendingUp} accent="green" />
                   </div>
 
-                  {/* ROI bar — recovered + annualized */}
+                  {/* ROI bar — current %-recovered as headline, annualized + payback as sub */}
                   {site.capex > 0 && (
                     <div className="bg-slate-900 px-5 py-2.5 border-t border-slate-800">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[9px] uppercase tracking-[0.15em] text-slate-500 font-bold">Capex Recovered</span>
-                        <span className={`text-xs font-black tabular-nums ${agg.roi >= 100 ? "text-emerald-400" : agg.roi >= 50 ? "text-amber-400" : "text-slate-400"}`}>
+                        <span className="text-[9px] uppercase tracking-[0.15em] text-slate-500 font-bold">Current ROI</span>
+                        <span className={`text-xs font-black tabular-nums ${agg.roi >= 100 ? "text-emerald-400" : agg.roi >= 25 ? "text-amber-400" : "text-slate-400"}`}>
                           {agg.roi.toFixed(1)}%
                         </span>
                       </div>
                       <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-                        <div className={`h-full transition-all ${agg.roi >= 100 ? "bg-emerald-500" : agg.roi >= 50 ? "bg-amber-500" : "bg-brand"}`}
+                        <div className={`h-full transition-all ${agg.roi >= 100 ? "bg-emerald-500" : agg.roi >= 25 ? "bg-amber-500" : "bg-brand"}`}
                           style={{ width: `${Math.min(100, Math.max(0, agg.roi))}%` }} />
                       </div>
                       <div className="flex items-center justify-between mt-1.5 text-[10px] text-slate-500 font-mono">
-                        <span>Annualized {agg.annualizedRoi.toFixed(1)}%</span>
+                        <span>{agg.annualizedRoi.toFixed(1)}% annualized</span>
                         <span>{agg.paybackYears != null && agg.paybackYears < 100 ? `Payback ${agg.paybackYears.toFixed(1)} yrs` : "Payback >100 yrs"}</span>
                       </div>
                     </div>

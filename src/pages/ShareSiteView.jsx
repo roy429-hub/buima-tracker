@@ -254,10 +254,11 @@ export default function ShareSiteView() {
             <HeroKPI label="Net Profit" value={`${sym}${fmtCompact(t.netProfit)}`}
               sub={`avg ${sym}${fmt0(t.monthlyAvgProfit)} / month`} icon={TrendingUp} />
             <HeroKPI
-              label="Annualized ROI"
-              value={site.capex > 0 ? `${fmt(t.annualizedRoi, 1)}%` : "—"}
+              label="Current ROI"
+              value={site.capex > 0 ? `${fmt(t.roi, 1)}%` : "—"}
               subLines={site.capex > 0
                 ? [
+                    `${fmt(t.annualizedRoi, 1)}% annualized`,
                     t.paybackMonths != null && t.paybackMonths < 1200
                       ? `Payback ${fmt0(t.paybackMonths)} mo (${fmt(t.paybackYears, 1)} yrs)`
                       : "Payback >100 yrs",
@@ -265,8 +266,8 @@ export default function ShareSiteView() {
                       ? (t.paybackFitsContract
                           ? `✓ within ${site.contractYears}-yr contract`
                           : `⚠ exceeds ${site.contractYears}-yr contract`)
-                      : `${fmt(t.roi, 1)}% recovered`
-                  ]
+                      : null
+                  ].filter(Boolean)
                 : ["Set CAPEX to compute"]}
               icon={Sparkles} />
             <HeroKPI label="Utilization" value={`${fmt(utilization, 1)}%`} sub={`${fmt0(t.totalChargeMinutes / 60)}h charging`} icon={Clock} />
