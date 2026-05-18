@@ -184,6 +184,14 @@ export function aggregateSite(siteId, site) {
     ? totals.paybackYears <= contractYears
     : null;
 
+  // Profit-share payouts (used by Partner Statement PDF)
+  const buimaPct   = site.buimaSplitPct   ?? 100;
+  const partnerPct = site.partnerSplitPct ?? 0;
+  totals.buimaPayout      = totals.netProfit * buimaPct   / 100;
+  totals.partnerPayout    = totals.netProfit * partnerPct / 100;
+  totals.buimaPayoutUSD   = toUSD(totals.buimaPayout,   site.currency);
+  totals.partnerPayoutUSD = toUSD(totals.partnerPayout, site.currency);
+
   const dailyRaw   = finalize(byDay);
   const weeklyRaw  = finalize(byWeek);
   const monthlyRaw = finalize(byMonth);

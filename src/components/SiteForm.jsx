@@ -160,6 +160,22 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
           suffix={`${site.currency}/kWh`} hint="Electricity + location share per kWh." />
       </div>
 
+      <hr className="border-slate-200" />
+      <p className="text-xs font-bold text-brand uppercase tracking-wider">Partner & Profit Share</p>
+      <p className="text-[11px] text-slate-500 -mt-2">Used to generate partner statements. Headline ROI on dashboards is still based on total net profit.</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Field label="Partner Name" value={site.partnerName} onChange={u("partnerName")}
+          placeholder="e.g., Zemovi (CPO)" hint="Shown on the statement header. Leave empty if no partner." />
+        <Field label="Partner Email" type="email" value={site.partnerEmail} onChange={u("partnerEmail")}
+          placeholder="ops@partner.com" hint="For statement delivery (manual for now)." />
+        <Field label="Buima Share" type="number" value={site.buimaSplitPct}
+          onChange={(v) => setSite({ ...site, buimaSplitPct: v, partnerSplitPct: 100 - v })}
+          suffix="%" hint="% of net profit retained by Buima." />
+        <Field label="Partner Share" type="number" value={site.partnerSplitPct}
+          onChange={(v) => setSite({ ...site, partnerSplitPct: v, buimaSplitPct: 100 - v })}
+          suffix="%" hint="% of net profit paid to partner." />
+      </div>
+
       {saveError && (
         <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />

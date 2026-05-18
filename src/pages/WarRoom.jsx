@@ -5,8 +5,10 @@ import L from "leaflet";
 import {
   Zap, Activity, TrendingUp, MapPinned, Upload, Search, Radio,
   AlertCircle, ChevronRight, Sparkles, BarChart3, Clock, DollarSign, Globe, Car,
-  Briefcase, Calendar
+  Briefcase, Calendar, FileText
 } from "lucide-react";
+import ReportModal from "../components/ReportModal";
+import { generateInvestorMonthlyReport } from "../lib/pdfReport";
 import { getSites, currencySymbol, fmt0, fmt, getUploads } from "../lib/storage";
 import { aggregateAllSites, aggregateSite, aggregatePortfolio } from "../lib/aggregate";
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
@@ -33,6 +35,7 @@ export default function WarRoom() {
   const [search, setSearch] = useState("");
   const [uploadTarget, setUploadTarget] = useState(null);
   const [period, setPeriod] = useState("daily");
+  const [showReport, setShowReport] = useState(false);
   const version = useStorageVersion();
   const sites = useMemo(() => getSites(), [version]);
   const data  = useMemo(() => aggregateAllSites(sites), [sites, version]);
@@ -103,7 +106,13 @@ export default function WarRoom() {
               FX {FX_LAST_UPDATED}
             </span>
           </div>
-          <LiveClock />
+          <div className="flex items-center gap-3">
+            <button onClick={() => setShowReport(true)}
+              className="bg-brand hover:bg-brand-dark text-white rounded-md px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider transition-colors shadow-[0_0_12px_rgba(190,18,60,0.25)]">
+              <FileText className="w-3.5 h-3.5" /> Investor Report
+            </button>
+            <LiveClock />
+          </div>
         </div>
       </div>
 
@@ -510,6 +519,18 @@ export default function WarRoom() {
           site={uploadTarget}
           onClose={() => setUploadTarget(null)}
           onDone={() => { /* storage subscription handles refresh */ }}
+        />
+      )}
+
+      {showReport && (
+        <ReportModal
+          title="Investor Monthly Report"
+          subtitle="Portfolio-wide PDF for distribution to investors"
+          icon={FileText}
+          onClose={() => setShowReport(false)}
+          onGenerate={(start, end) => {
+            generateInvestorMonthlyReport(sites, data, data.perSite, start, end);
+          }}
         />
       )}
     </div>

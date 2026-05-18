@@ -14,6 +14,10 @@ import { dbRegenerateShareToken } from "../lib/supabase";
 import UploadDropzone from "../components/UploadDropzone";
 import LiveClock from "../components/LiveClock";
 import { SiteFormModal } from "../components/SiteForm";
+import ReportModal from "../components/ReportModal";
+import { generatePartnerStatement } from "../lib/pdfReport";
+import { getUploadsForSite } from "../lib/storage";
+import { FileText } from "lucide-react";
 
 const PERIODS = [
   { id: "daily",   label: "Daily" },
@@ -28,6 +32,7 @@ export default function SiteDashboard() {
   const site = getSite(id);
   const [period, setPeriod] = useState("daily");
   const [editingSite, setEditingSite] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
   const data = useMemo(() => aggregateSite(id, site), [id, site, version]);
 
@@ -137,10 +142,16 @@ export default function SiteDashboard() {
                   <span className="font-mono text-xs">{site.chargerId}</span>
                 </p>
               </div>
-              <button onClick={() => setEditingSite(true)}
-                className="bg-white/15 hover:bg-white/25 backdrop-blur rounded-md px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold transition-colors">
-                <Settings className="w-3.5 h-3.5" /> Edit Site
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowReport(true)}
+                  className="bg-white text-brand hover:bg-brand-light rounded-md px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold transition-colors shadow-sm">
+                  <FileText className="w-3.5 h-3.5" /> Partner Statement
+                </button>
+                <button onClick={() => setEditingSite(true)}
+                  className="bg-white/15 hover:bg-white/25 backdrop-blur rounded-md px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold transition-colors">
+                  <Settings className="w-3.5 h-3.5" /> Edit Site
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-5 pt-5 border-t border-white/15 relative">
               <SiteParam label="Charging Fee" value={`${sym}${fmt(site.chargingFee)}`} unit="/kWh"   onClick={() => setEditingSite(true)} />
@@ -397,6 +408,19 @@ export default function SiteDashboard() {
           site={site}
           onClose={() => setEditingSite(false)}
           onSaved={() => setEditingSite(false)}
+        />
+      )}
+
+      {showReport && (
+        <ReportModal
+          title="Partner Statement"
+          subtitle={`${site.name} · ${site.partnerName || "no partner set"}`}
+          icon={FileText}
+          onClose={() => setShowReport(false)}
+          onGenerate={(start, end) => {
+            const uploads = getUploadsForSite(site.id);
+            generatePartnerStatement(site, uploads, start, end);
+          }}
         />
       )}
     </div>
