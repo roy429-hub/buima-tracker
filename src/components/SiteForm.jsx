@@ -116,9 +116,19 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
     } catch (e) {
       console.error("Site save failed:", e);
       const msg = e.message || String(e) || "Save failed";
-      const hint = /contract_years/i.test(msg)
-        ? " — your Supabase database needs migration 004 (add contract_years column). Run db/migrations/004_add_contract_years.sql in the SQL Editor."
-        : "";
+      let hint = "";
+      if (/contract_years/i.test(msg)) {
+        hint = " — Run migration 004 in Supabase SQL Editor: " +
+          "ALTER TABLE public.sites ADD COLUMN IF NOT EXISTS contract_years integer DEFAULT 10;";
+      } else if (/partner_name|partner_email|buima_split_pct|partner_split_pct/i.test(msg)) {
+        hint = " — Run migration 005 in Supabase SQL Editor: " +
+          "ALTER TABLE public.sites ADD COLUMN IF NOT EXISTS partner_name text DEFAULT ''; " +
+          "ADD COLUMN IF NOT EXISTS partner_email text DEFAULT ''; " +
+          "ADD COLUMN IF NOT EXISTS buima_split_pct numeric DEFAULT 100; " +
+          "ADD COLUMN IF NOT EXISTS partner_split_pct numeric DEFAULT 0;";
+      } else if (/schema cache|column .* of .* in the schema/i.test(msg)) {
+        hint = " — Looks like a Supabase schema/cache issue. Try waiting 10 seconds and retrying, or check db/migrations/ for the latest SQL to run.";
+      }
       setSaveError(msg + hint);
     } finally {
       setSaving(false);
