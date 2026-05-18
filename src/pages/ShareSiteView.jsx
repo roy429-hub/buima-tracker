@@ -259,8 +259,8 @@ export default function ShareSiteView() {
               subLines={site.capex > 0
                 ? [
                     `${fmt(t.annualizedRoi, 1)}% annualized`,
-                    t.paybackMonths != null && t.paybackMonths < 1200
-                      ? `Payback ${fmt0(t.paybackMonths)} mo (${fmt(t.paybackYears, 1)} yrs)`
+                    t.paybackYears != null && t.paybackYears < 100
+                      ? `Payback ${fmt(t.paybackYears, 1)} yrs (${fmt0(t.paybackMonths)} mo)`
                       : "Payback >100 yrs",
                     site.contractYears > 0
                       ? (t.paybackFitsContract

@@ -330,8 +330,8 @@ export function generateInvestorMonthlyReport(sites, portfolio, perSiteAgg, peri
     { label: "Monthly Profit",   value: fmtUSD(portfolio.totalMonthlyProfitUSD),  sub: "run-rate" },
     { label: "Annualized ROI",   value: `${fmt(portfolio.portfolioAnnualizedROI, 1)}%`, sub: "portfolio-wide" },
     { label: "Portfolio Payback",
-      value: portfolio.portfolioPaybackMonths != null ? `${fmt0(portfolio.portfolioPaybackMonths)} mo` : "—",
-      sub: portfolio.portfolioPaybackYears != null ? `${fmt(portfolio.portfolioPaybackYears, 1)} years` : "" },
+      value: portfolio.portfolioPaybackYears != null ? `${fmt(portfolio.portfolioPaybackYears, 1)} yrs` : "—",
+      sub: portfolio.portfolioPaybackMonths != null ? `${fmt0(portfolio.portfolioPaybackMonths)} months` : "" },
     { label: "Cars Served", value: fmt0(portfolio.totalSessions), sub: `${fmt0(portfolio.totalKwh)} kWh delivered` },
   ], 3);
   y += 6;
@@ -351,7 +351,7 @@ export function generateInvestorMonthlyReport(sites, portfolio, perSiteAgg, peri
         fmtUSD(t.monthlyAvgRevenueUSD),
         fmtUSD(t.monthlyAvgProfitUSD),
         site.capex > 0 ? `${fmt(t.annualizedRoi, 1)}%` : "—",
-        t.paybackMonths != null && t.paybackMonths < 1200 ? `${fmt0(t.paybackMonths)} mo` : "—",
+        t.paybackYears != null && t.paybackYears < 100 ? `${fmt(t.paybackYears, 1)} yrs` : "—",
       ];
     }),
     theme: "grid",

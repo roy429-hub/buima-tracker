@@ -145,12 +145,12 @@ export default function WarRoom() {
               ]}
               icon={Sparkles} />
             <HeroKPI label="Portfolio Payback"
-              value={data.portfolioPaybackMonths != null && data.portfolioPaybackMonths < 1200
-                ? `${fmt0(data.portfolioPaybackMonths)} mo`
+              value={data.portfolioPaybackYears != null && data.portfolioPaybackYears < 100
+                ? `${fmt(data.portfolioPaybackYears, 1)} yrs`
                 : "—"}
               subLines={[
-                data.portfolioPaybackYears != null && data.portfolioPaybackYears < 100
-                  ? `${fmt(data.portfolioPaybackYears, 1)} years`
+                data.portfolioPaybackMonths != null && data.portfolioPaybackMonths < 1200
+                  ? `${fmt0(data.portfolioPaybackMonths)} months`
                   : "set capex/upload data",
                 "to full capital recovery"
               ]}
@@ -348,8 +348,8 @@ export default function WarRoom() {
                       </div>
                       <div>
                         <p className="font-mono text-lg font-black text-brand tabular-nums">
-                          {topSite.agg.totals.paybackMonths != null && topSite.agg.totals.paybackMonths < 1200
-                            ? `${fmt0(topSite.agg.totals.paybackMonths)} mo`
+                          {topSite.agg.totals.paybackYears != null && topSite.agg.totals.paybackYears < 100
+                            ? `${fmt(topSite.agg.totals.paybackYears, 1)} yrs`
                             : "—"}
                         </p>
                         <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Payback</p>
@@ -503,11 +503,11 @@ export default function WarRoom() {
                           ) : "—"}
                         </td>
                         <td className={`px-4 py-3 text-right tabular-nums ${paybackOverContract ? "text-red-400" : "text-slate-300"}`}>
-                          {t.paybackMonths != null && t.paybackMonths < 1200 ? (
+                          {t.paybackYears != null && t.paybackYears < 100 ? (
                             <>
-                              <div className="font-bold">{fmt0(t.paybackMonths)} mo</div>
+                              <div className="font-bold">{fmt(t.paybackYears, 1)} yrs{paybackOverContract ? " ⚠" : ""}</div>
                               <div className="text-[9px] text-slate-500 font-normal">
-                                {fmt(t.paybackYears, 1)} yrs{paybackOverContract ? " ⚠" : ""}
+                                {fmt0(t.paybackMonths)} mo
                               </div>
                             </>
                           ) : "—"}
