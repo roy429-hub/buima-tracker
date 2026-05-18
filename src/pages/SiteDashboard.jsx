@@ -228,11 +228,11 @@ export default function SiteDashboard() {
                       }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12, color: "#cbd5e1" }} />
-                    <Bar yAxisId="left" dataKey="kwh" fill="#be123c" name="kWh" radius={[4, 4, 0, 0]} />
-                    <Line yAxisId="right" type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={2.5} name="Net Profit" dot={{ r: 3, fill: "#10b981" }} />
-                    <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#94a3b8" strokeWidth={2} strokeDasharray="4 4" name="Revenue" dot={{ r: 3, fill: "#94a3b8" }} />
-                    <Line yAxisId="cars" type="monotone" dataKey="sessions" stroke="#60a5fa" strokeWidth={2} name="Cars Served" dot={{ r: 3, fill: "#60a5fa" }} />
-                    <Line yAxisId="time" type="monotone" dataKey={(b) => (b.minutes || 0) / 60} stroke="#f59e0b" strokeWidth={2} strokeDasharray="2 3" name="Hours Charged" dot={{ r: 2.5, fill: "#f59e0b" }} />
+                    <Bar yAxisId="left" dataKey="kwh" fill="#be123c" name="kWh" radius={[3, 3, 0, 0]} />
+                    <Line yAxisId="right" type="monotone" dataKey="profit"  stroke="#10b981" strokeWidth={1.5} name="Net Profit"     dot={{ r: 1.5, fill: "#10b981" }} />
+                    <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="3 3" name="Revenue" dot={{ r: 1.5, fill: "#94a3b8" }} />
+                    <Line yAxisId="cars"  type="monotone" dataKey="sessions" stroke="#60a5fa" strokeWidth={1.5} name="Cars Served"   dot={{ r: 1.5, fill: "#60a5fa" }} />
+                    <Line yAxisId="time"  type="monotone" dataKey={(b) => (b.minutes || 0) / 60} stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="2 3" name="Hours Charged" dot={{ r: 1.5, fill: "#f59e0b" }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               )}

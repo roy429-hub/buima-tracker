@@ -199,6 +199,62 @@ export function aggregateSite(siteId, site) {
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Portfolio-wide time series. Revenue + Profit are converted to USD per
+// site, then summed. kWh, sessions, minutes are summed directly.
+// Used by the War Room "Portfolio Energy & Profit Trend" chart.
+// ─────────────────────────────────────────────────────────────────────
+export function aggregatePortfolio(sites) {
+  const byDay = {}, byWeek = {}, byMonth = {}, byYear = {};
+  let firstDate = null, lastDate = null;
+  const opexPerDayBySite = {};
+  sites.forEach(s => {
+    opexPerDayBySite[s.id] = (s.opexMonthly || 0) / 30.4375;
+  });
+
+  const portfolioBucket = (k, store) => store[k] || (store[k] = {
+    key: k, kwh: 0, sessions: 0, minutes: 0, revenue: 0, profit: 0,
+  });
+
+  sites.forEach(site => {
+    const uploads = getUploadsForSite(site.id);
+    uploads.forEach(u => {
+      const d = new Date(u.reportDate);
+      const kwh = u.totalKwh || 0;
+      const sess = u.totalSessions || 0;
+      const rev = kwh * (site.chargingFee || 0);
+      const varCost = kwh * (site.costPerKwh || 0);
+      const opex = opexPerDayBySite[site.id] || 0;
+      const profit = rev - varCost - opex;
+      const minutes = (u.sessions || []).reduce((s, x) => s + (x.durationMin || 0), 0);
+
+      const revUSD = toUSD(rev, site.currency);
+      const profitUSD = toUSD(profit, site.currency);
+
+      if (!firstDate || d < firstDate) firstDate = d;
+      if (!lastDate  || d > lastDate)  lastDate  = d;
+
+      [[dayKey(d), byDay], [isoWeek(d), byWeek], [monthKey(d), byMonth], [yearKey(d), byYear]].forEach(([k, store]) => {
+        const b = portfolioBucket(k, store);
+        b.kwh     += kwh;
+        b.sessions += sess;
+        b.minutes += minutes;
+        b.revenue += revUSD;
+        b.profit  += profitUSD;
+      });
+    });
+  });
+
+  const sorted = (s) => Object.values(s).sort((a, b) => a.key.localeCompare(b.key));
+  return {
+    daily:   fillDaily(sorted(byDay),     firstDate, lastDate),
+    weekly:  fillWeekly(sorted(byWeek),   firstDate, lastDate),
+    monthly: fillMonthly(sorted(byMonth), firstDate, lastDate),
+    yearly:  fillYearly(sorted(byYear),   firstDate, lastDate),
+    firstDate, lastDate,
+  };
+}
+
 export function aggregateAllSites(sites) {
   let totalKwh = 0, totalSessions = 0, totalDays = 0;
   let totalRevenueUSD = 0, totalProfitUSD = 0, totalCapexUSD = 0, totalOpexUSD = 0;

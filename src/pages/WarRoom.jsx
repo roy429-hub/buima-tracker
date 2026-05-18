@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { MapContainer, TileLayer, CircleMarker, Tooltip, ZoomControl } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip, ZoomControl } from "react-leaflet";
 import L from "leaflet";
 import {
   Zap, Activity, TrendingUp, MapPinned, Upload, Search, Radio,
@@ -8,7 +8,8 @@ import {
   Briefcase, Calendar
 } from "lucide-react";
 import { getSites, currencySymbol, fmt0, fmt, getUploads } from "../lib/storage";
-import { aggregateAllSites, aggregateSite } from "../lib/aggregate";
+import { aggregateAllSites, aggregateSite, aggregatePortfolio } from "../lib/aggregate";
+import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { fmtUSD, fmtCompact, FX_LAST_UPDATED, toUSD } from "../lib/fx";
 import { useStorageVersion } from "../lib/useStorage";
 import LiveClock from "../components/LiveClock";
@@ -21,12 +22,21 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
+const PERIODS = [
+  { id: "daily",   label: "Daily" },
+  { id: "weekly",  label: "Weekly" },
+  { id: "monthly", label: "Monthly" },
+  { id: "yearly",  label: "Yearly" },
+];
+
 export default function WarRoom() {
   const [search, setSearch] = useState("");
   const [uploadTarget, setUploadTarget] = useState(null);
+  const [period, setPeriod] = useState("daily");
   const version = useStorageVersion();
   const sites = useMemo(() => getSites(), [version]);
   const data  = useMemo(() => aggregateAllSites(sites), [sites, version]);
+  const portfolioSeries = useMemo(() => aggregatePortfolio(sites), [sites, version]);
 
   const filteredSites = sites.filter(s =>
     !search || s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -246,7 +256,7 @@ export default function WarRoom() {
                         <CircleMarker key={site.id} center={[site.lat, site.lng]}
                           radius={radius}
                           pathOptions={{ color, weight: 2, fillColor: color, fillOpacity: 0.55 }}>
-                          <Tooltip direction="top" offset={[0, -8]} permanent={false}>
+                          <LeafletTooltip direction="top" offset={[0, -8]} permanent={false}>
                             <div className="text-xs">
                               <div className="font-bold text-slate-900">{site.name}</div>
                               <div className="text-slate-600">{site.city}, {site.country}</div>
@@ -257,7 +267,7 @@ export default function WarRoom() {
                                 Net Profit: {sym}{fmt0(t.netProfit)} ({fmtUSD(t.netProfitUSD)})
                               </div>
                             </div>
-                          </Tooltip>
+                          </LeafletTooltip>
                         </CircleMarker>
                       );
                     })}
@@ -359,6 +369,58 @@ export default function WarRoom() {
               </div>
             </aside>
           </div>
+
+          {/* ── Portfolio Energy & Profit Trend (aggregated across all holdings) ── */}
+          <section className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+            <div className="bg-slate-800/50 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-3.5 h-3.5 text-brand" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Portfolio Energy & Profit Trend</h3>
+                <span className="text-[10px] text-slate-500 font-mono">aggregated · USD</span>
+              </div>
+              <div className="flex bg-slate-950 p-0.5 rounded-md border border-slate-700">
+                {PERIODS.map(p => (
+                  <button key={p.id} onClick={() => setPeriod(p.id)}
+                    className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider transition-all ${period === p.id ? "bg-brand text-white" : "text-slate-400 hover:text-white"}`}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="p-4 bg-slate-950">
+              {portfolioSeries[period].length === 0 ? (
+                <div className="h-64 flex items-center justify-center text-slate-500 text-sm">
+                  No data yet across the portfolio. Upload reports on any site to populate this trend.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={320}>
+                  <ComposedChart data={portfolioSeries[period]}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis dataKey="key" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
+                    <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
+                    <YAxis yAxisId="cars" orientation="right" hide />
+                    <YAxis yAxisId="time" orientation="right" hide />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 8, border: "1px solid #1e293b", background: "#0f172a", fontSize: 12 }}
+                      labelStyle={{ color: "#cbd5e1", fontWeight: "bold" }}
+                      formatter={(v, n) => {
+                        if (n === "kWh") return [fmt(v, 1), n];
+                        if (n === "Cars Served") return [fmt0(v), n];
+                        if (n === "Hours Charged") return [`${fmt(v, 1)} h`, n];
+                        return [fmtUSD(v), n];
+                      }} />
+                    <Legend wrapperStyle={{ fontSize: 12, color: "#cbd5e1" }} />
+                    <Bar yAxisId="left" dataKey="kwh" fill="#be123c" name="kWh" radius={[3, 3, 0, 0]} />
+                    <Line yAxisId="right" type="monotone" dataKey="profit"  stroke="#10b981" strokeWidth={1.5} name="Net Profit"    dot={{ r: 1.5, fill: "#10b981" }} />
+                    <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="3 3" name="Revenue" dot={{ r: 1.5, fill: "#94a3b8" }} />
+                    <Line yAxisId="cars"  type="monotone" dataKey="sessions" stroke="#60a5fa" strokeWidth={1.5} name="Cars Served" dot={{ r: 1.5, fill: "#60a5fa" }} />
+                    <Line yAxisId="time"  type="monotone" dataKey={(b) => (b.minutes || 0) / 60} stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="2 3" name="Hours Charged" dot={{ r: 1.5, fill: "#f59e0b" }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </section>
 
           {/* ── Full-width: Site performance table ── */}
           <section className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
