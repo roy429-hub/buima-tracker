@@ -212,10 +212,26 @@ export default function WarRoom() {
                             <span className="text-slate-400"><span className="text-brand font-bold">{fmt0(t.totalKwh)}</span> kWh</span>
                             <span className="text-slate-400"><span className="text-emerald-400 font-bold">{fmt0(t.totalSessions)}</span> cars</span>
                           </div>
-                          <p className="text-[10px] text-slate-500 mt-1">
+                          <p className="text-[10px] text-slate-500 mt-1 font-mono">
                             Net: <span className="text-emerald-400 font-bold">{sym}{fmt0(t.netProfit)}</span>
                             <span className="text-slate-600"> ({fmtUSD(t.netProfitUSD)})</span>
                           </p>
+                          <div className="flex items-center justify-between mt-1 font-mono text-[10px]">
+                            <span className="text-slate-500">
+                              CAPEX:{" "}
+                              {site.capex > 0
+                                ? <span className="text-slate-300 font-bold">{sym}{fmtCompact(site.capex)}</span>
+                                : <span className="text-slate-600">—</span>}
+                            </span>
+                            <span className="text-slate-500">
+                              ROI:{" "}
+                              {site.capex > 0 ? (
+                                <span className={`font-bold ${t.annualizedRoi >= 15 ? "text-emerald-400" : t.annualizedRoi >= 5 ? "text-amber-400" : "text-slate-400"}`}>
+                                  {fmt(t.annualizedRoi, 1)}%
+                                </span>
+                              ) : <span className="text-slate-600">—</span>}
+                            </span>
+                          </div>
                         </Link>
                         <button onClick={() => setUploadTarget(site)}
                           title="Quick upload xlsx"
