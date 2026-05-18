@@ -4,7 +4,8 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip, ZoomControl } from "rea
 import L from "leaflet";
 import {
   Zap, Activity, TrendingUp, MapPinned, Upload, Search, Radio,
-  AlertCircle, ChevronRight, Sparkles, BarChart3, Clock, DollarSign, Globe, Car
+  AlertCircle, ChevronRight, Sparkles, BarChart3, Clock, DollarSign, Globe, Car,
+  Briefcase, Calendar
 } from "lucide-react";
 import { getSites, currencySymbol, fmt0, fmt, getUploads } from "../lib/storage";
 import { aggregateAllSites, aggregateSite } from "../lib/aggregate";
@@ -67,8 +68,10 @@ export default function WarRoom() {
     return { tag: "offline", color: "text-red-400", dot: "bg-red-500", label: "Offline" };
   };
 
-  // ── Top performer ──
-  const topSite = [...data.perSite].sort((a, b) => b.agg.totals.totalKwh - a.agg.totals.totalKwh)[0];
+  // ── Best ROI holding ──
+  const topSite = [...data.perSite]
+    .filter(p => p.site.capex > 0 && p.agg.totals.annualizedRoi > 0)
+    .sort((a, b) => b.agg.totals.annualizedRoi - a.agg.totals.annualizedRoi)[0];
 
   // ── Total Cars Served ≈ total sessions (each session = 1 car) ──
   const totalCars = data.totalSessions;
@@ -78,16 +81,16 @@ export default function WarRoom() {
       {/* COMMAND BAR */}
       <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800/80">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="bg-brand/15 border border-brand/30 rounded-md px-2.5 py-1 flex items-center gap-1.5">
               <Radio className="w-3.5 h-3.5 text-brand animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-[0.25em] text-brand">War Room</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.25em] text-brand">B.E.S.T Portfolio · War Room</span>
             </div>
             <span className="text-xs text-slate-400 font-mono">
-              OPERATING · {sites.filter(s => s.active).length} / {sites.length} SITES
+              {sites.filter(s => s.active).length} / {sites.length} HOLDINGS · {fmtUSD(data.totalCapexUSD)} DEPLOYED
             </span>
             <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
-              · FX as of {FX_LAST_UPDATED}
+              FX {FX_LAST_UPDATED}
             </span>
           </div>
           <LiveClock />
@@ -98,14 +101,48 @@ export default function WarRoom() {
       <div className="bg-slate-950 text-slate-200 p-4 sm:p-6 lg:p-8 pb-12">
         <div className="max-w-[1400px] mx-auto space-y-4">
 
-          {/* ── INVESTOR-GRADE KPI ROW (full width, hero) ── */}
+          {/* ── ETF-STYLE PORTFOLIO KPI ROW (the headline metrics for investors) ── */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <HeroKPI label="Total Sites" value={fmt0(sites.length)} sub={`${sites.filter(s => s.active).length} active`} icon={MapPinned} />
-            <HeroKPI label="Cars Served" value={fmtCompact(totalCars)} sub="sessions to date" icon={Car} />
-            <HeroKPI label="kWh Delivered" value={fmtCompact(data.totalKwh)} sub={`${fmt0(data.totalDays)} run-days`} icon={Zap} />
-            <HeroKPI label="Revenue (USD)" value={fmtUSD(data.totalRevenueUSD)} sub="all sites, converted" icon={DollarSign} highlight />
-            <HeroKPI label="Net Profit (USD)" value={fmtUSD(data.totalProfitUSD)} sub={`Margin ${data.totalRevenueUSD > 0 ? ((data.totalProfitUSD / data.totalRevenueUSD) * 100).toFixed(1) : 0}%`} icon={TrendingUp} />
-            <HeroKPI label="Portfolio ROI" value={`${fmt(data.portfolioROI, 1)}%`} sub={`Profit ${fmtUSD(data.totalProfitUSD)} / Capex ${fmtUSD(data.totalCapexUSD)}`} icon={Sparkles} highlight />
+            <HeroKPI label="Capital Deployed"
+              value={fmtUSD(data.totalCapexUSD)}
+              subLines={[`${fmt0(sites.length)} sites (holdings)`, `${sites.filter(s => s.active).length} active`]}
+              icon={Briefcase} />
+            <HeroKPI label="Monthly Revenue"
+              value={fmtUSD(data.totalMonthlyRevenueUSD)}
+              subLines={[`Run-rate (run days)`, `Lifetime ${fmtUSD(data.totalRevenueUSD)}`]}
+              icon={DollarSign} />
+            <HeroKPI label="Monthly Profit"
+              value={fmtUSD(data.totalMonthlyProfitUSD)}
+              subLines={[
+                `Margin ${data.totalMonthlyRevenueUSD > 0 ? ((data.totalMonthlyProfitUSD / data.totalMonthlyRevenueUSD) * 100).toFixed(1) : 0}%`,
+                `Lifetime ${fmtUSD(data.totalProfitUSD)}`
+              ]}
+              icon={TrendingUp} />
+            <HeroKPI label="Annualized ROI"
+              value={`${fmt(data.portfolioAnnualizedROI, 1)}%`}
+              subLines={[
+                `Annualized ${fmtUSD(data.totalAnnualizedProfitUSD)} / yr`,
+                `${fmt(data.portfolioROI, 1)}% recovered to date`
+              ]}
+              icon={Sparkles} />
+            <HeroKPI label="Portfolio Payback"
+              value={data.portfolioPaybackMonths != null && data.portfolioPaybackMonths < 1200
+                ? `${fmt0(data.portfolioPaybackMonths)} mo`
+                : "—"}
+              subLines={[
+                data.portfolioPaybackYears != null && data.portfolioPaybackYears < 100
+                  ? `${fmt(data.portfolioPaybackYears, 1)} years`
+                  : "set capex/upload data",
+                "to full capital recovery"
+              ]}
+              icon={Calendar} />
+            <HeroKPI label="Cars Served"
+              value={fmtCompact(totalCars)}
+              subLines={[
+                `${fmtCompact(data.totalKwh)} kWh delivered`,
+                `${fmt0(data.totalDays)} operating days`
+              ]}
+              icon={Car} />
           </div>
 
           {/* ── 3-COLUMN GRID: sidebar | map | feed ── */}
@@ -257,23 +294,27 @@ export default function WarRoom() {
                 )}
               </div>
 
-              {topSite && topSite.agg.totals.totalKwh > 0 && (
+              {topSite && (
                 <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
                   <div className="bg-slate-800/50 border-b border-slate-800 px-4 py-2.5 flex items-center gap-2">
-                    <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Top Performer</h3>
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Top Holding · by ROI</h3>
                   </div>
                   <Link to={`/sites/${topSite.site.id}`} className="block p-4 hover:bg-slate-800/30 transition-colors">
                     <p className="font-bold text-white truncate">{topSite.site.name}</p>
                     <p className="text-[10px] text-slate-500 mb-3">{topSite.site.city} · {topSite.site.country}</p>
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
-                        <p className="font-mono text-lg font-black text-brand tabular-nums">{fmt0(topSite.agg.totals.totalKwh)}</p>
-                        <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Total kWh</p>
+                        <p className="font-mono text-lg font-black text-emerald-400 tabular-nums">{fmt(topSite.agg.totals.annualizedRoi, 1)}%</p>
+                        <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Annualized ROI</p>
                       </div>
                       <div>
-                        <p className="font-mono text-lg font-black text-emerald-400 tabular-nums">{fmtUSD(topSite.agg.totals.netProfitUSD)}</p>
-                        <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Net Profit (USD)</p>
+                        <p className="font-mono text-lg font-black text-brand tabular-nums">
+                          {topSite.agg.totals.paybackMonths != null && topSite.agg.totals.paybackMonths < 1200
+                            ? `${fmt0(topSite.agg.totals.paybackMonths)} mo`
+                            : "—"}
+                        </p>
+                        <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Payback</p>
                       </div>
                     </div>
                   </Link>
@@ -323,22 +364,21 @@ export default function WarRoom() {
           <section className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
             <div className="bg-slate-800/50 border-b border-slate-800 px-4 py-2.5 flex items-center gap-2">
               <BarChart3 className="w-3.5 h-3.5 text-brand" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Per-Site Performance · All in USD</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Holdings · All values in USD</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="text-[10px] uppercase tracking-wider text-slate-500 bg-slate-900">
                   <tr className="border-b border-slate-800">
                     <th className="px-4 py-3 text-left font-bold">Site</th>
-                    <th className="px-4 py-3 text-left font-bold">Location</th>
                     <th className="px-4 py-3 text-center font-bold">Status</th>
-                    <th className="px-4 py-3 text-right font-bold">Days</th>
+                    <th className="px-4 py-3 text-right font-bold">Setup Cost</th>
+                    <th className="px-4 py-3 text-right font-bold">Contract</th>
                     <th className="px-4 py-3 text-right font-bold">Cars</th>
-                    <th className="px-4 py-3 text-right font-bold">kWh</th>
-                    <th className="px-4 py-3 text-right font-bold">Revenue (USD)</th>
-                    <th className="px-4 py-3 text-right font-bold">OPEX (USD)</th>
-                    <th className="px-4 py-3 text-right font-bold">Net Profit (USD)</th>
+                    <th className="px-4 py-3 text-right font-bold">Monthly Rev</th>
+                    <th className="px-4 py-3 text-right font-bold">Monthly Profit</th>
                     <th className="px-4 py-3 text-right font-bold">Annualized ROI</th>
+                    <th className="px-4 py-3 text-right font-bold">Payback</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -346,31 +386,33 @@ export default function WarRoom() {
                   {data.perSite.map(({ site, agg }) => {
                     const status = siteStatus(site);
                     const t = agg.totals;
+                    const paybackOverContract = t.paybackYears != null && site.contractYears > 0 && t.paybackYears > site.contractYears;
                     return (
                       <tr key={site.id} className="hover:bg-slate-800/30 transition-colors">
                         <td className="px-4 py-3">
                           <Link to={`/sites/${site.id}`} className="font-sans font-bold text-white hover:text-brand">{site.name}</Link>
-                          <div className="text-[10px] text-slate-500 font-mono">{site.chargerId}</div>
+                          <div className="text-[10px] text-slate-500 font-mono">{site.city}, {site.country}</div>
                         </td>
-                        <td className="px-4 py-3 text-xs text-slate-400 font-sans">{site.city}, {site.country}</td>
                         <td className="px-4 py-3 text-center">
                           <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${status.color}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`}></span>
                             {status.label}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-slate-300 tabular-nums">{fmt0(t.totalDays)}</td>
+                        <td className="px-4 py-3 text-right text-slate-300 tabular-nums">{fmtUSD(t.capexUSD)}</td>
+                        <td className="px-4 py-3 text-right text-slate-300 tabular-nums">{site.contractYears || "—"} yrs</td>
                         <td className="px-4 py-3 text-right text-slate-300 tabular-nums">{fmt0(t.totalSessions)}</td>
-                        <td className="px-4 py-3 text-right font-bold text-brand tabular-nums">{fmt0(t.totalKwh)}</td>
-                        <td className="px-4 py-3 text-right text-slate-300 tabular-nums">{fmtUSD(t.grossRevenueUSD)}</td>
-                        <td className="px-4 py-3 text-right text-amber-400 tabular-nums">{fmtUSD(t.fixedOpexUSD)}</td>
-                        <td className="px-4 py-3 text-right font-bold text-emerald-400 tabular-nums">{fmtUSD(t.netProfitUSD)}</td>
+                        <td className="px-4 py-3 text-right text-slate-300 tabular-nums">{fmtUSD(t.monthlyAvgRevenueUSD)}</td>
+                        <td className="px-4 py-3 text-right font-bold text-emerald-400 tabular-nums">{fmtUSD(t.monthlyAvgProfitUSD)}</td>
                         <td className={`px-4 py-3 text-right font-bold tabular-nums ${t.annualizedRoi >= 15 ? "text-emerald-400" : t.annualizedRoi >= 5 ? "text-amber-400" : "text-slate-400"}`}>
-                          {site.capex > 0 ? (
+                          {site.capex > 0 ? `${fmt(t.annualizedRoi, 1)}%` : "—"}
+                        </td>
+                        <td className={`px-4 py-3 text-right tabular-nums ${paybackOverContract ? "text-red-400" : "text-slate-300"}`}>
+                          {t.paybackMonths != null && t.paybackMonths < 1200 ? (
                             <>
-                              {fmt(t.annualizedRoi, 1)}%
+                              <div className="font-bold">{fmt0(t.paybackMonths)} mo</div>
                               <div className="text-[9px] text-slate-500 font-normal">
-                                {t.paybackYears != null && t.paybackYears < 100 ? `payback ${fmt(t.paybackYears, 1)} yrs` : "payback >100 yrs"}
+                                {fmt(t.paybackYears, 1)} yrs{paybackOverContract ? " ⚠" : ""}
                               </div>
                             </>
                           ) : "—"}
@@ -390,7 +432,7 @@ export default function WarRoom() {
                     );
                   })}
                   {data.perSite.length === 0 && (
-                    <tr><td colSpan={12} className="text-center text-slate-500 py-12 text-xs">
+                    <tr><td colSpan={10} className="text-center text-slate-500 py-12 text-xs">
                       No sites yet. <Link to="/sites" className="text-brand font-bold">Add one →</Link>
                     </td></tr>
                   )}
@@ -412,15 +454,18 @@ export default function WarRoom() {
   );
 }
 
-function HeroKPI({ label, value, sub, icon: Icon, highlight }) {
+function HeroKPI({ label, value, sub, subLines, icon: Icon }) {
+  const lines = subLines || (sub ? [sub] : []);
   return (
-    <div className={`rounded-xl border p-4 ${highlight ? "bg-gradient-to-br from-brand/15 to-brand-dark/15 border-brand/40" : "bg-slate-900 border-slate-800"}`}>
+    <div className="rounded-xl border p-4 bg-slate-900 border-slate-800">
       <div className="flex items-center justify-between mb-1.5">
-        <p className={`text-[10px] uppercase tracking-[0.15em] font-bold ${highlight ? "text-brand" : "text-slate-400"}`}>{label}</p>
-        {Icon && <Icon className={`w-3.5 h-3.5 ${highlight ? "text-brand" : "text-slate-500"}`} />}
+        <p className="text-[10px] uppercase tracking-[0.15em] font-bold text-slate-400">{label}</p>
+        {Icon && <Icon className="w-3.5 h-3.5 text-slate-500" />}
       </div>
       <p className="text-2xl md:text-3xl font-black tabular-nums text-white">{value}</p>
-      {sub && <p className="text-[10px] text-slate-500 mt-1 font-mono truncate">{sub}</p>}
+      {lines.map((line, i) => (
+        <p key={i} className="text-[10px] text-slate-500 mt-1 font-mono leading-tight">{line}</p>
+      ))}
     </div>
   );
 }

@@ -22,6 +22,7 @@ returns table (
   cost_per_kwh    numeric,
   capex           numeric,
   opex_monthly    numeric,
+  contract_years  integer,
   currency        text,
   active          boolean
 )
@@ -30,7 +31,7 @@ security definer
 set search_path = public
 as $$
   select id, name, country, city, address, lat, lng, charger_id,
-         charging_fee, cost_per_kwh, capex, opex_monthly,
+         charging_fee, cost_per_kwh, capex, opex_monthly, contract_years,
          currency, active
     from public.sites
    where share_token = token and active = true

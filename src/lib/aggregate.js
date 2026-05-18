@@ -165,6 +165,24 @@ export function aggregateSite(siteId, site) {
   totals.annualizedProfit = totals.totalDays > 0 ? (totals.netProfit / totals.totalDays) * 365 : 0;
   totals.annualizedRoi    = (site.capex || 0) > 0 ? (totals.annualizedProfit / site.capex) * 100 : 0;
   totals.paybackYears     = totals.annualizedProfit > 0 ? site.capex / totals.annualizedProfit : null;
+  totals.paybackMonths    = totals.paybackYears != null ? totals.paybackYears * 12 : null;
+
+  // Monthly averages (run-rate, amortized across days of operation)
+  totals.monthlyAvgRevenue   = totals.annualizedProfit !== 0 ? (totals.grossRevenue / totals.totalDays) * 30.4375 : 0;
+  totals.monthlyAvgProfit    = totals.totalDays > 0 ? (totals.netProfit / totals.totalDays) * 30.4375 : 0;
+  totals.monthlyAvgRevenueUSD = toUSD(totals.monthlyAvgRevenue, site.currency);
+  totals.monthlyAvgProfitUSD  = toUSD(totals.monthlyAvgProfit,  site.currency);
+
+  // Contract horizon: projected total return if current rate holds for full contract
+  const contractYears = site.contractYears || 0;
+  totals.contractYears = contractYears;
+  totals.projectedTotalProfit = totals.annualizedProfit * contractYears;
+  totals.projectedContractRoi = (site.capex || 0) > 0
+    ? ((totals.projectedTotalProfit - site.capex) / site.capex) * 100
+    : 0;
+  totals.paybackFitsContract = totals.paybackYears != null && contractYears > 0
+    ? totals.paybackYears <= contractYears
+    : null;
 
   const dailyRaw   = finalize(byDay);
   const weeklyRaw  = finalize(byWeek);
@@ -184,6 +202,8 @@ export function aggregateSite(siteId, site) {
 export function aggregateAllSites(sites) {
   let totalKwh = 0, totalSessions = 0, totalDays = 0;
   let totalRevenueUSD = 0, totalProfitUSD = 0, totalCapexUSD = 0, totalOpexUSD = 0;
+  let totalMonthlyRevenueUSD = 0, totalMonthlyProfitUSD = 0;
+  let totalAnnualizedProfitUSD = 0;
 
   const perSite = sites.map(site => {
     const agg = aggregateSite(site.id, site);
@@ -194,16 +214,34 @@ export function aggregateAllSites(sites) {
     totalProfitUSD  += agg.totals.netProfitUSD;
     totalCapexUSD   += agg.totals.capexUSD;
     totalOpexUSD    += agg.totals.fixedOpexUSD;
+    totalMonthlyRevenueUSD   += agg.totals.monthlyAvgRevenueUSD;
+    totalMonthlyProfitUSD    += agg.totals.monthlyAvgProfitUSD;
+    totalAnnualizedProfitUSD += toUSD(agg.totals.annualizedProfit, site.currency);
     return { site, agg };
   });
 
-  // Portfolio ROI = total net profit / total CAPEX (no split applied)
+  // Portfolio cumulative ROI = total net profit recovered / total CAPEX
   const portfolioROI = totalCapexUSD > 0 ? (totalProfitUSD / totalCapexUSD) * 100 : 0;
+  // Portfolio annualized ROI = annualized profit / capex
+  const portfolioAnnualizedROI = totalCapexUSD > 0
+    ? (totalAnnualizedProfitUSD / totalCapexUSD) * 100
+    : 0;
+  // Portfolio payback (months) = capex / monthly profit run-rate
+  const portfolioPaybackMonths = totalMonthlyProfitUSD > 0
+    ? totalCapexUSD / totalMonthlyProfitUSD
+    : null;
+  const portfolioPaybackYears = portfolioPaybackMonths != null
+    ? portfolioPaybackMonths / 12
+    : null;
 
   return {
     totalKwh, totalSessions, totalDays,
     totalRevenueUSD, totalProfitUSD,
-    totalCapexUSD, totalOpexUSD, portfolioROI,
+    totalCapexUSD, totalOpexUSD,
+    totalMonthlyRevenueUSD, totalMonthlyProfitUSD,
+    totalAnnualizedProfitUSD,
+    portfolioROI, portfolioAnnualizedROI,
+    portfolioPaybackMonths, portfolioPaybackYears,
     perSite,
   };
 }

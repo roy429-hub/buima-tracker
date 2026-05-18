@@ -28,6 +28,7 @@ const siteFromDB = (r) => r && ({
   costPerKwh: Number(r.cost_per_kwh) || 0,
   capex: Number(r.capex) || 0,
   opexMonthly: Number(r.opex_monthly) || 0,
+  contractYears: Number(r.contract_years) || 0,
   currency: r.currency || "USD",
   active: r.active !== false,
   shareToken: r.share_token,
@@ -47,6 +48,7 @@ const siteToDB = (s) => ({
   cost_per_kwh: s.costPerKwh || 0,
   capex: s.capex || 0,
   opex_monthly: s.opexMonthly || 0,
+  contract_years: s.contractYears || 10,
   currency: s.currency || "USD",
   active: s.active !== false,
 });

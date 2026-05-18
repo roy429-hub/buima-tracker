@@ -142,11 +142,12 @@ export default function SiteDashboard() {
                 <Settings className="w-3.5 h-3.5" /> Edit Site
               </button>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-5 border-t border-white/15 relative">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-5 pt-5 border-t border-white/15 relative">
               <SiteParam label="Charging Fee" value={`${sym}${fmt(site.chargingFee)}`} unit="/kWh"   onClick={() => setEditingSite(true)} />
               <SiteParam label="Variable Cost" value={`${sym}${fmt(site.costPerKwh)}`} unit="/kWh"   onClick={() => setEditingSite(true)} />
               <SiteParam label="OPEX" value={`${sym}${fmt0(site.opexMonthly)}`} unit="/month"        onClick={() => setEditingSite(true)} />
-              <SiteParam label="CAPEX" value={`${sym}${fmtCompact(site.capex)}`} unit="total invest" onClick={() => setEditingSite(true)} />
+              <SiteParam label="Setup Cost" value={`${sym}${fmtCompact(site.capex)}`} unit="CAPEX"  onClick={() => setEditingSite(true)} />
+              <SiteParam label="Contract" value={site.contractYears || "—"} unit="years"            onClick={() => setEditingSite(true)} />
             </div>
             <p className="text-[10px] text-white/60 mt-3 relative">↑ Click any value to edit · or use the Edit Site button</p>
           </div>
@@ -155,18 +156,26 @@ export default function SiteDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <HeroKPI label="Cars Served" value={fmtCompact(t.totalSessions)} sub={`avg ${fmt(t.avgSessionsPerDay, 1)} / day`} icon={Car} />
             <HeroKPI label="kWh Delivered" value={fmtCompact(t.totalKwh)} sub={`avg ${fmt0(t.avgKwhPerDay)} kWh / day`} icon={Zap} />
-            <HeroKPI label="Revenue" value={`${sym}${fmtCompact(t.grossRevenue)}`} sub={fmtUSD(t.grossRevenueUSD) + " USD"} icon={DollarSign} />
-            <HeroKPI label="Net Profit" value={`${sym}${fmtCompact(t.netProfit)}`} sub={fmtUSD(t.netProfitUSD) + " USD"} icon={TrendingUp} highlight />
+            <HeroKPI label="Revenue" value={`${sym}${fmtCompact(t.grossRevenue)}`}
+              sub={`avg ${sym}${fmt0(t.monthlyAvgRevenue)} / month`} icon={DollarSign} />
+            <HeroKPI label="Net Profit" value={`${sym}${fmtCompact(t.netProfit)}`}
+              sub={`avg ${sym}${fmt0(t.monthlyAvgProfit)} / month`} icon={TrendingUp} />
             <HeroKPI
               label="Annualized ROI"
               value={site.capex > 0 ? `${fmt(t.annualizedRoi, 1)}%` : "—"}
-              sub={site.capex > 0
-                ? (t.paybackYears != null && t.paybackYears < 100
-                    ? `Payback ${fmt(t.paybackYears, 1)} yrs · ${fmt(t.roi, 1)}% recovered`
-                    : `${fmt(t.roi, 1)}% recovered · payback >100 yrs`)
-                : "Set CAPEX"}
-              icon={Sparkles}
-              highlight={t.annualizedRoi >= 10} />
+              subLines={site.capex > 0
+                ? [
+                    t.paybackMonths != null && t.paybackMonths < 1200
+                      ? `Payback ${fmt0(t.paybackMonths)} mo (${fmt(t.paybackYears, 1)} yrs)`
+                      : "Payback >100 yrs",
+                    site.contractYears > 0
+                      ? (t.paybackFitsContract
+                          ? `✓ within ${site.contractYears}-yr contract`
+                          : `⚠ exceeds ${site.contractYears}-yr contract`)
+                      : `${fmt(t.roi, 1)}% recovered`
+                  ]
+                : ["Set CAPEX to compute"]}
+              icon={Sparkles} />
             <HeroKPI label="Utilization" value={`${fmt(utilization, 1)}%`} sub={`${fmt0(t.totalChargeMinutes / 60)}h charging`} icon={Clock} />
           </div>
 
@@ -408,15 +417,18 @@ function SiteParam({ label, value, unit, onClick }) {
   );
 }
 
-function HeroKPI({ label, value, sub, icon: Icon, highlight }) {
+function HeroKPI({ label, value, sub, subLines, icon: Icon }) {
+  const lines = subLines || (sub ? [sub] : []);
   return (
-    <div className={`rounded-xl border p-4 ${highlight ? "bg-gradient-to-br from-brand/15 to-brand-dark/15 border-brand/40" : "bg-slate-900 border-slate-800"}`}>
+    <div className="rounded-xl border p-4 bg-slate-900 border-slate-800">
       <div className="flex items-center justify-between mb-1.5">
-        <p className={`text-[10px] uppercase tracking-[0.15em] font-bold ${highlight ? "text-brand" : "text-slate-400"}`}>{label}</p>
-        {Icon && <Icon className={`w-3.5 h-3.5 ${highlight ? "text-brand" : "text-slate-500"}`} />}
+        <p className="text-[10px] uppercase tracking-[0.15em] font-bold text-slate-400">{label}</p>
+        {Icon && <Icon className="w-3.5 h-3.5 text-slate-500" />}
       </div>
       <p className="text-2xl md:text-3xl font-black tabular-nums text-white">{value}</p>
-      {sub && <p className="text-[10px] text-slate-500 mt-1 font-mono truncate">{sub}</p>}
+      {lines.map((line, i) => (
+        <p key={i} className="text-[10px] text-slate-500 mt-1 font-mono leading-tight">{line}</p>
+      ))}
     </div>
   );
 }

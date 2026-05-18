@@ -72,6 +72,13 @@ function aggregate(site, uploads) {
   totals.annualizedProfit = totals.totalDays > 0 ? (totals.netProfit / totals.totalDays) * 365 : 0;
   totals.annualizedRoi    = (site.capex || 0) > 0 ? (totals.annualizedProfit / site.capex) * 100 : 0;
   totals.paybackYears     = totals.annualizedProfit > 0 ? site.capex / totals.annualizedProfit : null;
+  totals.paybackMonths    = totals.paybackYears != null ? totals.paybackYears * 12 : null;
+  totals.monthlyAvgRevenue = totals.totalDays > 0 ? (totals.grossRevenue / totals.totalDays) * 30.4375 : 0;
+  totals.monthlyAvgProfit  = totals.totalDays > 0 ? (totals.netProfit   / totals.totalDays) * 30.4375 : 0;
+  const contractYears = site.contractYears || 0;
+  totals.contractYears = contractYears;
+  totals.paybackFitsContract = totals.paybackYears != null && contractYears > 0
+    ? totals.paybackYears <= contractYears : null;
 
   // Gap-fillers — make missing days/weeks/months/years show as 0 instead of being skipped
   const zero = (k) => ({ key: k, kwh: 0, sessions: 0, minutes: 0, revenue: 0, profit: 0 });
@@ -228,11 +235,12 @@ export default function ShareSiteView() {
                 <span className="opacity-50">·</span>
                 <span className="font-mono text-xs">{site.chargerId}</span>
               </p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-5 border-t border-white/15">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-5 pt-5 border-t border-white/15">
                 <Param label="Charging Fee" value={`${sym}${fmt(site.chargingFee)}`} unit="/kWh" />
                 <Param label="Variable Cost" value={`${sym}${fmt(site.costPerKwh)}`} unit="/kWh" />
                 <Param label="OPEX" value={`${sym}${fmt0(site.opexMonthly)}`} unit="/month" />
-                <Param label="CAPEX" value={`${sym}${fmtCompact(site.capex)}`} unit="total invest" />
+                <Param label="Setup Cost" value={`${sym}${fmtCompact(site.capex)}`} unit="CAPEX" />
+                <Param label="Contract" value={site.contractYears || "—"} unit="years" />
               </div>
             </div>
           </div>
@@ -241,18 +249,26 @@ export default function ShareSiteView() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <HeroKPI label="Cars Served" value={fmtCompact(t.totalSessions)} sub={`avg ${fmt(t.avgSessionsPerDay, 1)} / day`} icon={Car} />
             <HeroKPI label="kWh Delivered" value={fmtCompact(t.totalKwh)} sub={`avg ${fmt0(t.avgKwhPerDay)} kWh / day`} icon={Zap} />
-            <HeroKPI label="Revenue" value={`${sym}${fmtCompact(t.grossRevenue)}`} sub={fmtUSD(t.grossRevenueUSD) + " USD"} icon={DollarSign} />
-            <HeroKPI label="Net Profit" value={`${sym}${fmtCompact(t.netProfit)}`} sub={fmtUSD(t.netProfitUSD) + " USD"} icon={TrendingUp} highlight />
+            <HeroKPI label="Revenue" value={`${sym}${fmtCompact(t.grossRevenue)}`}
+              sub={`avg ${sym}${fmt0(t.monthlyAvgRevenue)} / month`} icon={DollarSign} />
+            <HeroKPI label="Net Profit" value={`${sym}${fmtCompact(t.netProfit)}`}
+              sub={`avg ${sym}${fmt0(t.monthlyAvgProfit)} / month`} icon={TrendingUp} />
             <HeroKPI
               label="Annualized ROI"
               value={site.capex > 0 ? `${fmt(t.annualizedRoi, 1)}%` : "—"}
-              sub={site.capex > 0
-                ? (t.paybackYears != null && t.paybackYears < 100
-                    ? `Payback ${fmt(t.paybackYears, 1)} yrs · ${fmt(t.roi, 1)}% recovered`
-                    : `${fmt(t.roi, 1)}% recovered · payback >100 yrs`)
-                : "Set CAPEX"}
-              icon={Sparkles}
-              highlight={t.annualizedRoi >= 10} />
+              subLines={site.capex > 0
+                ? [
+                    t.paybackMonths != null && t.paybackMonths < 1200
+                      ? `Payback ${fmt0(t.paybackMonths)} mo (${fmt(t.paybackYears, 1)} yrs)`
+                      : "Payback >100 yrs",
+                    site.contractYears > 0
+                      ? (t.paybackFitsContract
+                          ? `✓ within ${site.contractYears}-yr contract`
+                          : `⚠ exceeds ${site.contractYears}-yr contract`)
+                      : `${fmt(t.roi, 1)}% recovered`
+                  ]
+                : ["Set CAPEX to compute"]}
+              icon={Sparkles} />
             <HeroKPI label="Utilization" value={`${fmt(utilization, 1)}%`} sub={`${fmt0(t.totalChargeMinutes / 60)}h charging`} icon={Clock} />
           </div>
 
@@ -414,15 +430,18 @@ function Param({ label, value, unit }) {
   );
 }
 
-function HeroKPI({ label, value, sub, icon: Icon, highlight }) {
+function HeroKPI({ label, value, sub, subLines, icon: Icon }) {
+  const lines = subLines || (sub ? [sub] : []);
   return (
-    <div className={`rounded-xl border p-4 ${highlight ? "bg-gradient-to-br from-brand/15 to-brand-dark/15 border-brand/40" : "bg-slate-900 border-slate-800"}`}>
+    <div className="rounded-xl border p-4 bg-slate-900 border-slate-800">
       <div className="flex items-center justify-between mb-1.5">
-        <p className={`text-[10px] uppercase tracking-[0.15em] font-bold ${highlight ? "text-brand" : "text-slate-400"}`}>{label}</p>
-        {Icon && <Icon className={`w-3.5 h-3.5 ${highlight ? "text-brand" : "text-slate-500"}`} />}
+        <p className="text-[10px] uppercase tracking-[0.15em] font-bold text-slate-400">{label}</p>
+        {Icon && <Icon className="w-3.5 h-3.5 text-slate-500" />}
       </div>
       <p className="text-2xl md:text-3xl font-black tabular-nums text-white">{value}</p>
-      {sub && <p className="text-[10px] text-slate-500 mt-1 font-mono truncate">{sub}</p>}
+      {lines.map((line, i) => (
+        <p key={i} className="text-[10px] text-slate-500 mt-1 font-mono leading-tight">{line}</p>
+      ))}
     </div>
   );
 }

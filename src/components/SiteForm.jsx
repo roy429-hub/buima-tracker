@@ -141,8 +141,10 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Currency (3-letter)" value={site.currency} onChange={u("currency")}
           hint="USD, EUR, GBP, JPY, TWD, CNY, AUD, CAD…" />
-        <Field label="CAPEX (Total Investment)" type="number" value={site.capex} onChange={u("capex")}
-          suffix={site.currency} hint="One-time upfront investment. Used to compute ROI." />
+        <Field label="Setup Cost / CAPEX" type="number" value={site.capex} onChange={u("capex")}
+          suffix={site.currency} hint="One-time upfront installation cost. Used for ROI + payback." />
+        <Field label="Contract Years" type="number" value={site.contractYears} onChange={u("contractYears")}
+          suffix="years" hint="Length of the operating contract. Used to assess if payback fits within contract." />
         <Field label="OPEX (Monthly Fixed Cost)" type="number" value={site.opexMonthly} onChange={u("opexMonthly")}
           suffix={`${site.currency}/mo`} hint="Rent, maintenance, comms — subtracted from net profit." />
         <Field label="Charging Fee" type="number" value={site.chargingFee} onChange={u("chargingFee")}

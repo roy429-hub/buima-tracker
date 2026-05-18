@@ -19,6 +19,7 @@ create table if not exists public.sites (
   cost_per_kwh      numeric default 0,
   capex             numeric default 0,
   opex_monthly      numeric default 0,
+  contract_years    integer default 10,
   currency          text default 'USD',
   active            boolean default true,
   share_token       text unique default replace(gen_random_uuid()::text, '-', ''),
