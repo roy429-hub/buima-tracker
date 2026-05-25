@@ -9,6 +9,7 @@ import { dbFetchSiteByShareToken, dbFetchUploadsByShareToken } from "../lib/supa
 import { currencySymbol, fmt, fmt0 } from "../lib/storage";
 import { fmtUSD, fmtCompact, toUSD } from "../lib/fx";
 import LiveClock from "../components/LiveClock";
+import ChartTooltip from "../components/ChartTooltip";
 
 const PERIODS = [
   { id: "daily",   label: "Daily" },
@@ -301,22 +302,19 @@ export default function ShareSiteView() {
               {series.length === 0 ? (
                 <div className="h-64 flex items-center justify-center text-slate-500 text-sm">No data yet.</div>
               ) : (
-                <ResponsiveContainer width="100%" height={320}>
-                  <ComposedChart data={series}>
+                <ResponsiveContainer width="100%" height={360}>
+                  <ComposedChart data={series} margin={{ top: 40, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                     <XAxis dataKey="key" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
                     <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
                     <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
                     <YAxis yAxisId="cars" orientation="right" hide />
                     <YAxis yAxisId="time" orientation="right" hide />
-                    <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #1e293b", background: "#0f172a", fontSize: 12 }}
-                      labelStyle={{ color: "#cbd5e1", fontWeight: "bold" }}
-                      formatter={(v, n) => {
-                        if (n === "kWh") return [fmt(v, 1), n];
-                        if (n === "Cars Served") return [fmt0(v), n];
-                        if (n === "Hours Charged") return [`${fmt(v, 1)} h`, n];
-                        return [`${sym}${fmt0(v)}`, n];
-                      }} />
+                    <Tooltip
+                      content={<ChartTooltip sym={sym} />}
+                      position={{ y: 0 }}
+                      cursor={{ stroke: "#475569", strokeWidth: 1, strokeDasharray: "3 3" }}
+                    />
                     <Legend wrapperStyle={{ fontSize: 12, color: "#cbd5e1" }} />
                     <Bar yAxisId="left" dataKey="kwh" fill="#be123c" name="kWh" radius={[3, 3, 0, 0]} />
                     <Line yAxisId="right" type="monotone" dataKey="profit"  stroke="#10b981" strokeWidth={1.5} name="Net Profit"     dot={{ r: 1.5, fill: "#10b981" }} />

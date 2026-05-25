@@ -15,6 +15,7 @@ import UploadDropzone from "../components/UploadDropzone";
 import LiveClock from "../components/LiveClock";
 import { SiteFormModal } from "../components/SiteForm";
 import ReportModal from "../components/ReportModal";
+import ChartTooltip from "../components/ChartTooltip";
 import { generatePartnerStatement } from "../lib/pdfReport";
 import { getUploadsForSite } from "../lib/storage";
 import { FileText } from "lucide-react";
@@ -221,8 +222,8 @@ export default function SiteDashboard() {
                   No data yet. Upload an xlsx report below to populate the trend.
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={320}>
-                  <ComposedChart data={series}>
+                <ResponsiveContainer width="100%" height={360}>
+                  <ComposedChart data={series} margin={{ top: 40, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                     <XAxis dataKey="key" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
                     <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "#64748b" }} stroke="#334155" />
@@ -230,14 +231,9 @@ export default function SiteDashboard() {
                     <YAxis yAxisId="cars" orientation="right" hide />
                     <YAxis yAxisId="time" orientation="right" hide />
                     <Tooltip
-                      contentStyle={{ borderRadius: 8, border: "1px solid #1e293b", background: "#0f172a", fontSize: 12 }}
-                      labelStyle={{ color: "#cbd5e1", fontWeight: "bold" }}
-                      formatter={(v, n) => {
-                        if (n === "kWh") return [fmt(v, 1), n];
-                        if (n === "Cars Served") return [fmt0(v), n];
-                        if (n === "Hours Charged") return [`${fmt(v, 1)} h`, n];
-                        return [`${sym}${fmt0(v)}`, n];
-                      }}
+                      content={<ChartTooltip sym={sym} />}
+                      position={{ y: 0 }}
+                      cursor={{ stroke: "#475569", strokeWidth: 1, strokeDasharray: "3 3" }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12, color: "#cbd5e1" }} />
                     <Bar yAxisId="left" dataKey="kwh" fill="#be123c" name="kWh" radius={[3, 3, 0, 0]} />
