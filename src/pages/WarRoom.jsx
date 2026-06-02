@@ -88,9 +88,15 @@ export default function WarRoom() {
 
   const maxKwh = Math.max(1, ...data.perSite.map(p => p.agg.totals.totalKwh));
 
-  // ── Today's stats (USD) ──
+  // Lookup: is this site active?
+  const isActiveById = id => {
+    const s = sites.find(s => s.id === id);
+    return s && s.active !== false;
+  };
+
+  // ── Today's stats (USD) — ACTIVE sites only ──
   const todayISO = new Date().toISOString().slice(0, 10);
-  const todayUploads = getUploads().filter(u => u.reportDate === todayISO);
+  const todayUploads = getUploads().filter(u => u.reportDate === todayISO && isActiveById(u.siteId));
   const todayKwh = todayUploads.reduce((s, u) => s + (u.totalKwh || 0), 0);
   const todaySess = todayUploads.reduce((s, u) => s + (u.totalSessions || 0), 0);
   const todayRevenueUSD = todayUploads.reduce((acc, u) => {
@@ -99,8 +105,9 @@ export default function WarRoom() {
     return acc + toUSD((u.totalKwh || 0) * site.chargingFee, site.currency);
   }, 0);
 
-  // ── Recent activity feed (last 8 sessions across all sites) ──
+  // ── Recent activity feed (last 8 sessions across ACTIVE sites only) ──
   const recentSessions = sites
+    .filter(s => s.active !== false)
     .flatMap(s => {
       const agg = aggregateSite(s.id, s);
       return agg.uploads.flatMap(u => (u.sessions || []).map(sess => ({
@@ -121,9 +128,9 @@ export default function WarRoom() {
     return { tag: "offline", color: "text-red-400", dot: "bg-red-500", label: "Offline" };
   };
 
-  // ── Best ROI holding (by current %-recovered) ──
+  // ── Best ROI holding (by current %-recovered) — ACTIVE only ──
   const topSite = [...data.perSite]
-    .filter(p => p.site.capex > 0 && p.agg.totals.roi > 0)
+    .filter(p => p.site.active !== false && p.site.capex > 0 && p.agg.totals.roi > 0)
     .sort((a, b) => b.agg.totals.roi - a.agg.totals.roi)[0];
 
   // ── Total Cars Served ≈ total sessions (each session = 1 car) ──
