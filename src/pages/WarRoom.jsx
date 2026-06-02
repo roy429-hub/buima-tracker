@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip, ZoomControl } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip, ZoomControl, useMap } from "react-leaflet";
 import L from "leaflet";
 import {
   Zap, Activity, TrendingUp, MapPinned, Upload, Search, Radio,
@@ -24,6 +24,24 @@ L.Icon.Default.mergeOptions({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
+
+// Auto-fit map to all site markers — eliminates blank space below the map.
+function FitBoundsToMarkers({ sites }) {
+  const map = useMap();
+  const valid = sites.filter(s => s.lat && s.lng);
+  // Stringify points so the effect only re-runs when the coords actually change
+  const key = valid.map(s => `${s.lat},${s.lng}`).join("|");
+  useEffect(() => {
+    if (valid.length === 0) return;
+    if (valid.length === 1) {
+      map.setView([valid[0].lat, valid[0].lng], 4, { animate: false });
+      return;
+    }
+    const bounds = L.latLngBounds(valid.map(s => [s.lat, s.lng]));
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 5, animate: false });
+  }, [key, map]);  // depend on coord signature, not array reference
+  return null;
+}
 
 const PERIODS = [
   { id: "daily",   label: "Daily" },
@@ -269,22 +287,34 @@ export default function WarRoom() {
                   <div className="text-[10px] text-slate-500 font-mono">marker size ∝ cumulative kWh</div>
                 </div>
                 <div style={{ height: 560 }} className="relative">
-                  <MapContainer center={[25, 30]} zoom={2.2} scrollWheelZoom zoomControl={false}
+                  <MapContainer
+                    center={[25, 30]}
+                    zoom={2}
+                    minZoom={2}
+                    maxZoom={10}
+                    maxBounds={[[-85, -180], [85, 180]]}
+                    maxBoundsViscosity={1.0}
+                    worldCopyJump={false}
+                    scrollWheelZoom
+                    zoomControl={false}
                     style={{ height: "100%", width: "100%", background: "#020617" }}>
                     <TileLayer
                       attribution='&copy; CartoDB · OSM'
                       url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                      noWrap
                     />
                     <ZoomControl position="bottomright" />
+                    <FitBoundsToMarkers sites={data.perSite.map(p => p.site)} />
                     {data.perSite.filter(p => p.site.lat && p.site.lng).map(({ site, agg }) => {
                       const t = agg.totals;
                       const sym = currencySymbol(site.currency);
-                      const radius = 7 + (t.totalKwh / maxKwh) * 22;
+                      // Smaller markers: 3-10 instead of 7-29
+                      const radius = 3 + (t.totalKwh / maxKwh) * 7;
                       const color = t.totalKwh > 0 ? "#be123c" : "#64748b";
                       return (
                         <CircleMarker key={site.id} center={[site.lat, site.lng]}
                           radius={radius}
-                          pathOptions={{ color, weight: 2, fillColor: color, fillOpacity: 0.55 }}>
+                          pathOptions={{ color, weight: 1, fillColor: color, fillOpacity: 0.7 }}>
                           <LeafletTooltip direction="top" offset={[0, -8]} permanent={false}>
                             <div className="text-xs">
                               <div className="font-bold text-slate-900">{site.name}</div>
