@@ -25,21 +25,41 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// Auto-fit map to all site markers — eliminates blank space below the map.
+// Auto-fit map to all site markers + recompute size when container resizes.
+// Eliminates blank space when the column grows taller than the initial map.
 function FitBoundsToMarkers({ sites }) {
   const map = useMap();
   const valid = sites.filter(s => s.lat && s.lng);
-  // Stringify points so the effect only re-runs when the coords actually change
   const key = valid.map(s => `${s.lat},${s.lng}`).join("|");
-  useEffect(() => {
+
+  const refit = () => {
     if (valid.length === 0) return;
     if (valid.length === 1) {
       map.setView([valid[0].lat, valid[0].lng], 4, { animate: false });
-      return;
+    } else {
+      const bounds = L.latLngBounds(valid.map(s => [s.lat, s.lng]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 5, animate: false });
     }
-    const bounds = L.latLngBounds(valid.map(s => [s.lat, s.lng]));
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 5, animate: false });
-  }, [key, map]);  // depend on coord signature, not array reference
+  };
+
+  useEffect(() => {
+    // Initial fit + a delayed retry after the flex container settles
+    map.invalidateSize();
+    refit();
+    const t = setTimeout(() => { map.invalidateSize(); refit(); }, 60);
+
+    // Re-fit whenever the map container resizes (column heights change)
+    const container = map.getContainer();
+    const ro = new ResizeObserver(() => {
+      map.invalidateSize();
+      refit();
+    });
+    ro.observe(container);
+
+    return () => { clearTimeout(t); ro.disconnect(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, map]);
+
   return null;
 }
 
@@ -286,7 +306,7 @@ export default function WarRoom() {
                   </div>
                   <div className="text-[10px] text-slate-500 font-mono">marker size ∝ cumulative kWh</div>
                 </div>
-                <div style={{ height: 560 }} className="relative">
+                <div className="relative flex-1 min-h-[480px]">
                   <MapContainer
                     center={[25, 30]}
                     zoom={2}
