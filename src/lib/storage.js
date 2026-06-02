@@ -52,6 +52,23 @@ export async function deleteSite(id) {
   notify();
 }
 
+// Toggle a site's active flag (used to include/exclude from portfolio totals)
+export async function toggleSiteActive(id, active) {
+  const s = getSite(id);
+  if (!s) throw new Error("Site not found");
+  // Optimistic update for instant feedback
+  _sites = _sites.map(x => x.id === id ? { ...x, active } : x);
+  notify();
+  try {
+    await upsertSite({ ...s, active });
+  } catch (e) {
+    // Roll back on failure
+    _sites = _sites.map(x => x.id === id ? { ...x, active: !active } : x);
+    notify();
+    throw e;
+  }
+}
+
 // ─── Uploads (sync reads / async mutations) ───────────────────────
 export const getUploads        = () => _uploads;
 export const getUploadsForSite = (siteId) => _uploads.filter(u => u.siteId === siteId);

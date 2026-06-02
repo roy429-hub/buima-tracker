@@ -5,11 +5,11 @@ import L from "leaflet";
 import {
   Zap, Activity, TrendingUp, MapPinned, Upload, Search, Radio,
   AlertCircle, ChevronRight, Sparkles, BarChart3, Clock, DollarSign, Globe, Car,
-  Briefcase, Calendar, FileText
+  Briefcase, Calendar, FileText, Power
 } from "lucide-react";
 import ReportModal from "../components/ReportModal";
 import { generateInvestorMonthlyReport } from "../lib/pdfReport";
-import { getSites, currencySymbol, fmt0, fmt, getUploads } from "../lib/storage";
+import { getSites, currencySymbol, fmt0, fmt, getUploads, toggleSiteActive } from "../lib/storage";
 import { aggregateAllSites, aggregateSite, aggregatePortfolio } from "../lib/aggregate";
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { fmtUSD, fmtCompact, FX_LAST_UPDATED, toUSD } from "../lib/fx";
@@ -112,6 +112,7 @@ export default function WarRoom() {
 
   // ── Site status ──
   const siteStatus = (site) => {
+    if (site.active === false) return { tag: "off", color: "text-slate-500", dot: "bg-slate-600", label: "Off" };
     const agg = aggregateSite(site.id, site);
     if (!agg.totals.lastDate) return { tag: "no-data", color: "text-slate-500", dot: "bg-slate-600", label: "No Data" };
     const daysAgo = (new Date() - agg.totals.lastDate) / 86400000;
@@ -139,7 +140,12 @@ export default function WarRoom() {
               <span className="text-[10px] font-black uppercase tracking-[0.25em] text-brand">B.E.S.T Portfolio · War Room</span>
             </div>
             <span className="text-xs text-slate-400 font-mono">
-              {sites.filter(s => s.active).length} / {sites.length} HOLDINGS · {fmtUSD(data.totalCapexUSD)} DEPLOYED
+              {sites.filter(s => s.active !== false).length} / {sites.length} HOLDINGS · {fmtUSD(data.totalCapexUSD)} DEPLOYED
+              {sites.some(s => s.active === false) && (
+                <span className="text-amber-400/80 ml-1">
+                  · {sites.filter(s => s.active === false).length} EXCLUDED
+                </span>
+              )}
             </span>
             <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
               FX {FX_LAST_UPDATED}
@@ -230,9 +236,10 @@ export default function WarRoom() {
                   const t = agg.totals;
                   const status = siteStatus(site);
                   const sym = currencySymbol(site.currency);
+                  const isOff = site.active === false;
                   return (
                     <div key={site.id}
-                      className="group border-b border-slate-800/70 hover:bg-slate-800/50 transition-colors px-4 py-3">
+                      className={`group border-b border-slate-800/70 hover:bg-slate-800/50 transition-colors px-4 py-3 ${isOff ? "opacity-50" : ""}`}>
                       <div className="flex items-start justify-between gap-2">
                         <Link to={`/sites/${site.id}`} className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 mb-0.5">
@@ -275,11 +282,27 @@ export default function WarRoom() {
                             </span>
                           </div>
                         </Link>
-                        <button onClick={() => setUploadTarget(site)}
-                          title="Quick upload xlsx"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-brand bg-slate-800 hover:bg-slate-700 rounded-md p-1.5 flex-shrink-0">
-                          <Upload className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex flex-col gap-1 flex-shrink-0">
+                          <button
+                            onClick={async (e) => {
+                              e.preventDefault(); e.stopPropagation();
+                              try { await toggleSiteActive(site.id, !site.active); }
+                              catch (err) { alert("Toggle failed: " + err.message); }
+                            }}
+                            title={isOff ? "Include in portfolio totals" : "Exclude from portfolio totals"}
+                            className={`transition-all rounded-md p-1.5 ${
+                              isOff
+                                ? "opacity-100 text-slate-400 hover:text-emerald-400 bg-slate-800 hover:bg-slate-700"
+                                : "opacity-100 text-emerald-400 hover:text-slate-500 bg-emerald-500/15 hover:bg-slate-800"
+                            }`}>
+                            <Power className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => setUploadTarget(site)}
+                            title="Quick upload xlsx"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-brand bg-slate-800 hover:bg-slate-700 rounded-md p-1.5">
+                            <Upload className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -324,8 +347,8 @@ export default function WarRoom() {
                       noWrap
                     />
                     <ZoomControl position="bottomright" />
-                    <FitBoundsToMarkers sites={data.perSite.map(p => p.site)} />
-                    {data.perSite.filter(p => p.site.lat && p.site.lng).map(({ site, agg }) => {
+                    <FitBoundsToMarkers sites={data.perSite.filter(p => p.site.active !== false).map(p => p.site)} />
+                    {data.perSite.filter(p => p.site.lat && p.site.lng && p.site.active !== false).map(({ site, agg }) => {
                       const t = agg.totals;
                       const sym = currencySymbol(site.currency);
                       // Smaller markers: 3-10 instead of 7-29
@@ -524,8 +547,9 @@ export default function WarRoom() {
                     const status = siteStatus(site);
                     const t = agg.totals;
                     const paybackOverContract = t.paybackYears != null && site.contractYears > 0 && t.paybackYears > site.contractYears;
+                    const isOff = site.active === false;
                     return (
-                      <tr key={site.id} className="hover:bg-slate-800/30 transition-colors">
+                      <tr key={site.id} className={`hover:bg-slate-800/30 transition-colors ${isOff ? "opacity-50" : ""}`}>
                         <td className="px-4 py-3">
                           <Link to={`/sites/${site.id}`} className="font-sans font-bold text-white hover:text-brand">{site.name}</Link>
                           <div className="text-[10px] text-slate-500 font-mono">{site.city}, {site.country}</div>
@@ -560,8 +584,21 @@ export default function WarRoom() {
                           ) : "—"}
                         </td>
                         <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={async () => {
+                              try { await toggleSiteActive(site.id, !site.active); }
+                              catch (err) { alert("Toggle failed: " + err.message); }
+                            }}
+                            className={`rounded p-1.5 inline-flex transition-colors ${
+                              isOff
+                                ? "text-slate-500 hover:text-emerald-400 bg-slate-800 hover:bg-slate-700"
+                                : "text-emerald-400 hover:text-slate-500 bg-emerald-500/15 hover:bg-slate-800"
+                            }`}
+                            title={isOff ? "Include in portfolio totals" : "Exclude from portfolio totals"}>
+                            <Power className="w-3.5 h-3.5" />
+                          </button>
                           <button onClick={() => setUploadTarget(site)}
-                            className="text-slate-400 hover:text-brand bg-slate-800 hover:bg-slate-700 rounded p-1.5 inline-flex"
+                            className="ml-1 text-slate-400 hover:text-brand bg-slate-800 hover:bg-slate-700 rounded p-1.5 inline-flex"
                             title="Quick upload">
                             <Upload className="w-3.5 h-3.5" />
                           </button>

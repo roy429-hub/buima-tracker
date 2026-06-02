@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Plus, Trash2, MapPin, Settings, ChevronRight,
-  Upload, MapPinned, Zap, Activity, TrendingUp
+  Upload, MapPinned, Zap, Activity, TrendingUp, Power
 } from "lucide-react";
-import { getSites, deleteSite, currencySymbol } from "../lib/storage";
+import { getSites, deleteSite, currencySymbol, toggleSiteActive } from "../lib/storage";
 import { aggregateSite } from "../lib/aggregate";
 import { fmtUSD, fmtCompact } from "../lib/fx";
 import { useStorageVersion } from "../lib/useStorage";
@@ -67,9 +67,10 @@ export default function Sites() {
                 else status = { color: "text-red-400", dot: "bg-red-500", label: "Offline" };
               }
 
+              const isOff = site.active === false;
               return (
                 <div key={site.id}
-                  className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden hover:border-brand/40 transition-all group shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
+                  className={`bg-slate-900 border border-slate-800 rounded-xl overflow-hidden hover:border-brand/40 transition-all group shadow-[0_4px_16px_rgba(0,0,0,0.3)] ${isOff ? "opacity-60" : ""}`}>
                   {/* Header strip */}
                   <Link to={`/sites/${site.id}`}
                     className="block px-5 py-4 border-b border-slate-800 bg-gradient-to-r from-slate-900 to-slate-900/60 group-hover:from-slate-800 transition-colors">
@@ -123,6 +124,19 @@ export default function Sites() {
                   {/* Footer actions */}
                   <div className="border-t border-slate-800 px-5 py-3 flex items-center justify-between bg-slate-900/50">
                     <div className="flex items-center gap-1">
+                      <button
+                        onClick={async () => {
+                          try { await toggleSiteActive(site.id, !site.active); }
+                          catch (err) { alert("Toggle failed: " + err.message); }
+                        }}
+                        title={isOff ? "Include in portfolio totals" : "Exclude from portfolio totals"}
+                        className={`p-1.5 rounded-md transition-colors ${
+                          isOff
+                            ? "text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10"
+                            : "text-emerald-400 hover:text-slate-500 bg-emerald-500/10 hover:bg-slate-800"
+                        }`}>
+                        <Power className="w-3.5 h-3.5" />
+                      </button>
                       <IconBtn onClick={() => setUploadTarget(site)} title="Quick upload xlsx"><Upload className="w-3.5 h-3.5" /></IconBtn>
                       <IconBtn onClick={() => setEditing(site)} title="Edit settings"><Settings className="w-3.5 h-3.5" /></IconBtn>
                       <IconBtn onClick={async () => {

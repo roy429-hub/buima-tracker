@@ -224,7 +224,7 @@ export function aggregatePortfolio(sites) {
     key: k, kwh: 0, sessions: 0, minutes: 0, revenue: 0, profit: 0,
   });
 
-  sites.forEach(site => {
+  sites.filter(s => s.active !== false).forEach(site => {
     const uploads = getUploadsForSite(site.id);
     uploads.forEach(u => {
       const d = new Date(u.reportDate);
@@ -269,18 +269,22 @@ export function aggregateAllSites(sites) {
   let totalMonthlyRevenueUSD = 0, totalMonthlyProfitUSD = 0;
   let totalAnnualizedProfitUSD = 0;
 
+  // Compute each site's aggregate (so the sidebar / table can still show it),
+  // but ONLY include active sites in the portfolio totals.
   const perSite = sites.map(site => {
     const agg = aggregateSite(site.id, site);
-    totalKwh        += agg.totals.totalKwh;
-    totalSessions   += agg.totals.totalSessions;
-    totalDays       += agg.totals.totalDays;
-    totalRevenueUSD += agg.totals.grossRevenueUSD;
-    totalProfitUSD  += agg.totals.netProfitUSD;
-    totalCapexUSD   += agg.totals.capexUSD;
-    totalOpexUSD    += agg.totals.fixedOpexUSD;
-    totalMonthlyRevenueUSD   += agg.totals.monthlyAvgRevenueUSD;
-    totalMonthlyProfitUSD    += agg.totals.monthlyAvgProfitUSD;
-    totalAnnualizedProfitUSD += toUSD(agg.totals.annualizedProfit, site.currency);
+    if (site.active !== false) {
+      totalKwh        += agg.totals.totalKwh;
+      totalSessions   += agg.totals.totalSessions;
+      totalDays       += agg.totals.totalDays;
+      totalRevenueUSD += agg.totals.grossRevenueUSD;
+      totalProfitUSD  += agg.totals.netProfitUSD;
+      totalCapexUSD   += agg.totals.capexUSD;
+      totalOpexUSD    += agg.totals.fixedOpexUSD;
+      totalMonthlyRevenueUSD   += agg.totals.monthlyAvgRevenueUSD;
+      totalMonthlyProfitUSD    += agg.totals.monthlyAvgProfitUSD;
+      totalAnnualizedProfitUSD += toUSD(agg.totals.annualizedProfit, site.currency);
+    }
     return { site, agg };
   });
 
