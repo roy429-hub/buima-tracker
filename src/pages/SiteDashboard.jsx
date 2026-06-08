@@ -182,11 +182,11 @@ export default function SiteDashboard() {
             <HeroKPI label="Net Profit" value={`${sym}${fmtCompact(t.netProfit)}`}
               sub={`avg ${sym}${fmt0(t.monthlyAvgProfit)} / month`} icon={TrendingUp} />
             <HeroKPI
-              label="Current ROI"
-              value={site.capex > 0 ? `${fmt(t.roi, 1)}%` : "—"}
+              label="Annualized ROI"
+              value={site.capex > 0 ? `${fmt(t.annualizedRoi, 1)}%` : "—"}
               subLines={site.capex > 0
                 ? [
-                    `${fmt(t.annualizedRoi, 1)}% annualized`,
+                    `${fmt(t.roi, 1)}% current (capex recovered)`,
                     t.paybackYears != null && t.paybackYears < 100
                       ? `Payback ${fmt(t.paybackYears, 1)} yrs (${fmt0(t.paybackMonths)} mo)`
                       : "Payback >100 yrs",
