@@ -17,6 +17,7 @@ import { useStorageVersion } from "../lib/useStorage";
 import LiveClock from "../components/LiveClock";
 import SiteQuickUpload from "../components/SiteQuickUpload";
 import ChartTooltip from "../components/ChartTooltip";
+import TimeframeSelector, { getDateRange, TIMEFRAME_LABEL } from "../components/TimeframeSelector";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -75,10 +76,12 @@ export default function WarRoom() {
   const [uploadTarget, setUploadTarget] = useState(null);
   const [period, setPeriod] = useState("daily");
   const [showReport, setShowReport] = useState(false);
+  const [timeframe, setTimeframe] = useState("all");
+  const dateRange = useMemo(() => getDateRange(timeframe), [timeframe]);
   const version = useStorageVersion();
   const sites = useMemo(() => getSites(), [version]);
-  const data  = useMemo(() => aggregateAllSites(sites), [sites, version]);
-  const portfolioSeries = useMemo(() => aggregatePortfolio(sites), [sites, version]);
+  const data  = useMemo(() => aggregateAllSites(sites, dateRange), [sites, version, dateRange]);
+  const portfolioSeries = useMemo(() => aggregatePortfolio(sites, dateRange), [sites, version, dateRange]);
 
   const filteredSites = sites.filter(s =>
     !search || s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -105,11 +108,11 @@ export default function WarRoom() {
     return acc + toUSD((u.totalKwh || 0) * site.chargingFee, site.currency);
   }, 0);
 
-  // ── Recent activity feed (last 8 sessions across ACTIVE sites only) ──
+  // ── Recent activity feed (last 8 sessions, ACTIVE sites + within timeframe) ──
   const recentSessions = sites
     .filter(s => s.active !== false)
     .flatMap(s => {
-      const agg = aggregateSite(s.id, s);
+      const agg = aggregateSite(s.id, s, dateRange);  // already filtered to timeframe
       return agg.uploads.flatMap(u => (u.sessions || []).map(sess => ({
         ...sess, site: s, reportDate: u.reportDate, currency: s.currency,
       })));
@@ -153,12 +156,18 @@ export default function WarRoom() {
                   · {sites.filter(s => s.active === false).length} EXCLUDED
                 </span>
               )}
+              {dateRange && (
+                <span className="text-brand ml-1">
+                  · RANGE {dateRange.start} → {dateRange.end}
+                </span>
+              )}
             </span>
             <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
               FX {FX_LAST_UPDATED}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <TimeframeSelector value={timeframe} onChange={setTimeframe} />
             <button onClick={() => setShowReport(true)}
               className="bg-brand hover:bg-brand-dark text-white rounded-md px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider transition-colors shadow-[0_0_12px_rgba(190,18,60,0.25)]">
               <FileText className="w-3.5 h-3.5" /> Investor Report

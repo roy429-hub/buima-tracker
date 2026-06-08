@@ -75,8 +75,12 @@ function fillYearly(series, firstDate, lastDate) {
   return out;
 }
 
-export function aggregateSite(siteId, site) {
-  const uploads = getUploadsForSite(siteId);
+export function aggregateSite(siteId, site, dateRange = null) {
+  const allUploads = getUploadsForSite(siteId);
+  // Filter to the requested timeframe (null = all time)
+  const uploads = dateRange
+    ? allUploads.filter(u => u.reportDate >= dateRange.start && u.reportDate <= dateRange.end)
+    : allUploads;
   // OPEX is monthly, allocate per day → / ~30.42 (avg days/month)
   const opexPerDay = (site.opexMonthly || 0) / 30.4375;
 
@@ -197,12 +201,17 @@ export function aggregateSite(siteId, site) {
   const monthlyRaw = finalize(byMonth);
   const yearlyRaw  = finalize(byYear);
 
+  // Chart range: span the WHOLE dateRange so missing days show as 0 bars.
+  // For "All Time" use actual data dates.
+  const chartStart = dateRange ? new Date(dateRange.start + "T00:00:00Z") : totals.firstDate;
+  const chartEnd   = dateRange ? new Date(dateRange.end   + "T00:00:00Z") : totals.lastDate;
+
   return {
     totals,
-    daily:   fillDaily(dailyRaw,     totals.firstDate, totals.lastDate),
-    weekly:  fillWeekly(weeklyRaw,   totals.firstDate, totals.lastDate),
-    monthly: fillMonthly(monthlyRaw, totals.firstDate, totals.lastDate),
-    yearly:  fillYearly(yearlyRaw,   totals.firstDate, totals.lastDate),
+    daily:   fillDaily(dailyRaw,     chartStart, chartEnd),
+    weekly:  fillWeekly(weeklyRaw,   chartStart, chartEnd),
+    monthly: fillMonthly(monthlyRaw, chartStart, chartEnd),
+    yearly:  fillYearly(yearlyRaw,   chartStart, chartEnd),
     uploads: uploads.sort((a, b) => b.reportDate.localeCompare(a.reportDate)),
   };
 }
@@ -212,7 +221,7 @@ export function aggregateSite(siteId, site) {
 // site, then summed. kWh, sessions, minutes are summed directly.
 // Used by the War Room "Portfolio Energy & Profit Trend" chart.
 // ─────────────────────────────────────────────────────────────────────
-export function aggregatePortfolio(sites) {
+export function aggregatePortfolio(sites, dateRange = null) {
   const byDay = {}, byWeek = {}, byMonth = {}, byYear = {};
   let firstDate = null, lastDate = null;
   const opexPerDayBySite = {};
@@ -225,7 +234,10 @@ export function aggregatePortfolio(sites) {
   });
 
   sites.filter(s => s.active !== false).forEach(site => {
-    const uploads = getUploadsForSite(site.id);
+    const allUploads = getUploadsForSite(site.id);
+    const uploads = dateRange
+      ? allUploads.filter(u => u.reportDate >= dateRange.start && u.reportDate <= dateRange.end)
+      : allUploads;
     uploads.forEach(u => {
       const d = new Date(u.reportDate);
       const kwh = u.totalKwh || 0;
@@ -254,16 +266,18 @@ export function aggregatePortfolio(sites) {
   });
 
   const sorted = (s) => Object.values(s).sort((a, b) => a.key.localeCompare(b.key));
+  const chartStart = dateRange ? new Date(dateRange.start + "T00:00:00Z") : firstDate;
+  const chartEnd   = dateRange ? new Date(dateRange.end   + "T00:00:00Z") : lastDate;
   return {
-    daily:   fillDaily(sorted(byDay),     firstDate, lastDate),
-    weekly:  fillWeekly(sorted(byWeek),   firstDate, lastDate),
-    monthly: fillMonthly(sorted(byMonth), firstDate, lastDate),
-    yearly:  fillYearly(sorted(byYear),   firstDate, lastDate),
+    daily:   fillDaily(sorted(byDay),     chartStart, chartEnd),
+    weekly:  fillWeekly(sorted(byWeek),   chartStart, chartEnd),
+    monthly: fillMonthly(sorted(byMonth), chartStart, chartEnd),
+    yearly:  fillYearly(sorted(byYear),   chartStart, chartEnd),
     firstDate, lastDate,
   };
 }
 
-export function aggregateAllSites(sites) {
+export function aggregateAllSites(sites, dateRange = null) {
   let totalKwh = 0, totalSessions = 0, totalDays = 0;
   let totalRevenueUSD = 0, totalProfitUSD = 0, totalCapexUSD = 0, totalOpexUSD = 0;
   let totalMonthlyRevenueUSD = 0, totalMonthlyProfitUSD = 0;
@@ -272,7 +286,7 @@ export function aggregateAllSites(sites) {
   // Compute each site's aggregate (so the sidebar / table can still show it),
   // but ONLY include active sites in the portfolio totals.
   const perSite = sites.map(site => {
-    const agg = aggregateSite(site.id, site);
+    const agg = aggregateSite(site.id, site, dateRange);
     if (site.active !== false) {
       totalKwh        += agg.totals.totalKwh;
       totalSessions   += agg.totals.totalSessions;

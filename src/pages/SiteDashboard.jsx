@@ -16,6 +16,7 @@ import LiveClock from "../components/LiveClock";
 import { SiteFormModal } from "../components/SiteForm";
 import ReportModal from "../components/ReportModal";
 import ChartTooltip from "../components/ChartTooltip";
+import TimeframeSelector, { getDateRange } from "../components/TimeframeSelector";
 import { generatePartnerStatement } from "../lib/pdfReport";
 import { getUploadsForSite } from "../lib/storage";
 import { FileText } from "lucide-react";
@@ -34,8 +35,10 @@ export default function SiteDashboard() {
   const [period, setPeriod] = useState("daily");
   const [editingSite, setEditingSite] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [timeframe, setTimeframe] = useState("all");
+  const dateRange = useMemo(() => getDateRange(timeframe), [timeframe]);
 
-  const data = useMemo(() => aggregateSite(id, site), [id, site, version]);
+  const data = useMemo(() => aggregateSite(id, site, dateRange), [id, site, version, dateRange]);
 
   if (!site) return (
     <div className="text-center py-20">
@@ -120,9 +123,15 @@ export default function SiteDashboard() {
               </span>
               <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${status.color}`}>{status.label}</span>
             </div>
-            <span className="text-xs text-slate-400 font-mono hidden sm:inline">{t.totalDays} report files on record</span>
+            <span className="text-xs text-slate-400 font-mono hidden sm:inline">
+              {t.totalDays} report files {dateRange ? `in range` : "on record"}
+              {dateRange && <span className="text-brand ml-1">· {dateRange.start} → {dateRange.end}</span>}
+            </span>
           </div>
-          <LiveClock />
+          <div className="flex items-center gap-3 flex-wrap">
+            <TimeframeSelector value={timeframe} onChange={setTimeframe} />
+            <LiveClock />
+          </div>
         </div>
       </div>
 
