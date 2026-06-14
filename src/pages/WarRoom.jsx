@@ -348,7 +348,11 @@ export default function WarRoom() {
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Global Footprint</h3>
                     <span className="text-[10px] text-slate-500 font-mono">{sites.length} markers</span>
                   </div>
-                  <div className="text-[10px] text-slate-500 font-mono">marker size ∝ cumulative kWh</div>
+                  <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2">
+                    <span><span className="inline-block w-2 h-2 rounded-full bg-brand mr-1 align-middle"></span>EV</span>
+                    <span><span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1 align-middle"></span>ESS</span>
+                    <span className="opacity-60">size ∝ kWh</span>
+                  </div>
                 </div>
                 <div className="relative flex-1 min-h-[480px]">
                   <MapContainer
@@ -372,23 +376,38 @@ export default function WarRoom() {
                     {data.perSite.filter(p => p.site.lat && p.site.lng && p.site.active !== false).map(({ site, agg }) => {
                       const t = agg.totals;
                       const sym = currencySymbol(site.currency);
-                      // Smaller markers: 3-10 instead of 7-29
-                      const radius = 3 + (t.totalKwh / maxKwh) * 7;
-                      const color = t.totalKwh > 0 ? "#be123c" : "#64748b";
+                      const isEss = site.siteType === "ess";
+                      // Baseline of 5 so empty sites are still visible, scaled up to ~12 by kWh
+                      const radius = 5 + (t.totalKwh / maxKwh) * 7;
+                      // ESS sites = emerald green, EV sites = brand rose (gray only for inactive EV)
+                      const color = isEss
+                        ? "#10b981"
+                        : (t.totalKwh > 0 ? "#be123c" : "#64748b");
                       return (
                         <CircleMarker key={site.id} center={[site.lat, site.lng]}
                           radius={radius}
                           pathOptions={{ color, weight: 1, fillColor: color, fillOpacity: 0.7 }}>
                           <LeafletTooltip direction="top" offset={[0, -8]} permanent={false}>
                             <div className="text-xs">
-                              <div className="font-bold text-slate-900">{site.name}</div>
+                              <div className="font-bold text-slate-900">
+                                {site.name}
+                                {isEss && <span className="ml-1.5 text-[8px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 border border-amber-300 rounded px-1 py-0.5">ESS</span>}
+                              </div>
                               <div className="text-slate-600">{site.city}, {site.country}</div>
-                              <div className="mt-1 text-slate-700">
-                                <b>{fmt0(t.totalKwh)}</b> kWh · <b>{t.totalSessions}</b> sessions
-                              </div>
-                              <div className="text-emerald-700 font-bold">
-                                Net Profit: {sym}{fmt0(t.netProfit)} ({fmtUSD(t.netProfitUSD)})
-                              </div>
+                              {isEss ? (
+                                <div className="mt-1 text-slate-700">
+                                  <b>{fmt0(t.totalKwh)}</b> kWh discharged · <b>{agg.uploads.length}</b> daily reports
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="mt-1 text-slate-700">
+                                    <b>{fmt0(t.totalKwh)}</b> kWh · <b>{t.totalSessions}</b> sessions
+                                  </div>
+                                  <div className="text-emerald-700 font-bold">
+                                    Net Profit: {sym}{fmt0(t.netProfit)} ({fmtUSD(t.netProfitUSD)})
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </LeafletTooltip>
                         </CircleMarker>
