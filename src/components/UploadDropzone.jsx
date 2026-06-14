@@ -1,6 +1,21 @@
 import { useRef, useState } from "react";
 import { UploadCloud, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { parseChargerXlsx } from "../lib/parseXLSX";
+import { parseEssXlsx, detectXlsxKind } from "../lib/parseEssXlsx";
+import * as XLSX from "xlsx";
+
+// Smart parse: detect EV vs ESS by header signature, dispatch to right parser
+async function smartParseXlsx(file) {
+  // Quick peek at header row to decide which parser
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: "array", cellDates: true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const raw = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
+  if (raw.length < 1) throw new Error("xlsx is empty");
+  const kind = detectXlsxKind(raw[0]);
+  if (kind === "ess") return await parseEssXlsx(file);
+  return await parseChargerXlsx(file);
+}
 
 export default function UploadDropzone({ onParsed, theme = "dark" }) {
   const inputRef = useRef();
@@ -17,7 +32,7 @@ export default function UploadDropzone({ onParsed, theme = "dark" }) {
     const errs = [];
     for (const f of files) {
       try {
-        const r = await parseChargerXlsx(f);
+        const r = await smartParseXlsx(f);
         onParsed?.(r, f);
         ok.push({ filename: f.name, ...r });
       } catch (e) {

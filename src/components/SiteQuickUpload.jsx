@@ -8,16 +8,29 @@ export default function SiteQuickUpload({ site, onClose, onDone }) {
 
   const handleParsed = async (parsed) => {
     try {
-      await addUpload({
+      const base = {
         siteId: site.id,
         reportDate: parsed.reportDate,
         chargerId: parsed.chargerId,
-        totalKwh: parsed.totalKwh,
-        totalSessions: parsed.totalSessions,
-        c1Sessions: parsed.c1Sessions,
-        c2Sessions: parsed.c2Sessions,
-        sessions: parsed.sessions,
-      });
+      };
+      if (parsed.kind === "ess") {
+        await addUpload({
+          ...base,
+          totalKwh: parsed.summary?.dischargedKwh || 0,
+          totalSessions: 0, c1Sessions: 0, c2Sessions: 0,
+          sessions: [],
+          essSummary: parsed.summary,
+        });
+      } else {
+        await addUpload({
+          ...base,
+          totalKwh: parsed.totalKwh,
+          totalSessions: parsed.totalSessions,
+          c1Sessions: parsed.c1Sessions,
+          c2Sessions: parsed.c2Sessions,
+          sessions: parsed.sessions,
+        });
+      }
       setCount(c => c + 1);
       onDone?.();
     } catch (e) {

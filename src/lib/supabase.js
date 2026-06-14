@@ -33,6 +33,7 @@ const siteFromDB = (r) => r && ({
   partnerEmail: r.partner_email || "",
   buimaSplitPct: r.buima_split_pct !== null && r.buima_split_pct !== undefined ? Number(r.buima_split_pct) : 100,
   partnerSplitPct: r.partner_split_pct !== null && r.partner_split_pct !== undefined ? Number(r.partner_split_pct) : 0,
+  siteType: r.site_type || "ev",
   currency: r.currency || "USD",
   active: r.active !== false,
   shareToken: r.share_token,
@@ -61,6 +62,7 @@ const siteToDB = (s) => ({
   partner_email:   s.partnerEmail    ?? "",
   buima_split_pct:   s.buimaSplitPct   ?? 100,
   partner_split_pct: s.partnerSplitPct ?? 0,
+  site_type: s.siteType || "ev",
   currency: s.currency || "USD",
   active: s.active !== false,
 });
@@ -75,6 +77,7 @@ const uploadFromDB = (r) => r && ({
   c1Sessions: r.c1_sessions || 0,
   c2Sessions: r.c2_sessions || 0,
   sessions: r.sessions || [],
+  essSummary: r.ess_summary || null,
   uploadedAt: r.uploaded_at,
 });
 
@@ -87,6 +90,7 @@ const uploadToDB = (u) => ({
   c1_sessions: u.c1Sessions || 0,
   c2_sessions: u.c2Sessions || 0,
   sessions: u.sessions || [],
+  ess_summary: u.essSummary || null,
 });
 
 // ─── Sites ───────────────────────────────────────────

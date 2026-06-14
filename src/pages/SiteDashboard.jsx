@@ -17,6 +17,7 @@ import { SiteFormModal } from "../components/SiteForm";
 import ReportModal from "../components/ReportModal";
 import ChartTooltip from "../components/ChartTooltip";
 import TimeframeSelector, { getDateRange } from "../components/TimeframeSelector";
+import EssSiteDashboard from "./EssSiteDashboard";
 import { generatePartnerStatement } from "../lib/pdfReport";
 import { getUploadsForSite } from "../lib/storage";
 import { FileText } from "lucide-react";
@@ -47,18 +48,33 @@ export default function SiteDashboard() {
     </div>
   );
 
+  // ESS sites use a different dashboard (energy flows, not EV revenue)
+  if (site.siteType === "ess") return <EssSiteDashboard site={site} />;
+
   const sym = currencySymbol(site.currency);
   const t = data.totals;
   const series = data[period];
 
   const handleParsed = async (parsed) => {
     try {
-      await addUpload({
-        siteId: id, reportDate: parsed.reportDate, chargerId: parsed.chargerId,
-        totalKwh: parsed.totalKwh, totalSessions: parsed.totalSessions,
-        c1Sessions: parsed.c1Sessions, c2Sessions: parsed.c2Sessions,
-        sessions: parsed.sessions,
-      });
+      if (parsed.kind === "ess") {
+        // ESS upload — totalKwh = total energy discharged (useful "energy delivered" proxy)
+        await addUpload({
+          siteId: id, reportDate: parsed.reportDate, chargerId: parsed.chargerId,
+          totalKwh: parsed.summary?.dischargedKwh || 0,
+          totalSessions: 0, c1Sessions: 0, c2Sessions: 0,
+          sessions: [],
+          essSummary: parsed.summary,
+        });
+      } else {
+        // EV charger upload (existing path)
+        await addUpload({
+          siteId: id, reportDate: parsed.reportDate, chargerId: parsed.chargerId,
+          totalKwh: parsed.totalKwh, totalSessions: parsed.totalSessions,
+          c1Sessions: parsed.c1Sessions, c2Sessions: parsed.c2Sessions,
+          sessions: parsed.sessions,
+        });
+      }
     } catch (e) {
       alert("Failed to save upload: " + e.message);
     }

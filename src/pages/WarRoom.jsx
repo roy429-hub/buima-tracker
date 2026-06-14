@@ -268,7 +268,12 @@ export default function WarRoom() {
                             <span className={`text-[9px] font-bold uppercase tracking-wider ${status.color}`}>{status.label}</span>
                             <span className="text-[9px] font-mono text-slate-500 ml-auto">{agg.uploads.length} files</span>
                           </div>
-                          <p className="text-sm font-bold text-white truncate group-hover:text-brand transition-colors">{site.name}</p>
+                          <p className="text-sm font-bold text-white truncate group-hover:text-brand transition-colors">
+                            {site.name}
+                            {site.siteType === "ess" && (
+                              <span className="ml-1.5 text-[8px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/15 border border-amber-500/30 rounded px-1 py-0.5 align-middle">ESS</span>
+                            )}
+                          </p>
                           <p className="text-[10px] text-slate-500 mt-0.5 truncate">{site.city}, {site.country}</p>
                           <div className="flex items-center gap-3 mt-2 font-mono text-[11px]">
                             <span className="text-slate-400"><span className="text-brand font-bold">{fmt0(t.totalKwh)}</span> kWh</span>

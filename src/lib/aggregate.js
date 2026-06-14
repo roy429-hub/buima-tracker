@@ -284,20 +284,26 @@ export function aggregateAllSites(sites, dateRange = null) {
   let totalAnnualizedProfitUSD = 0;
 
   // Compute each site's aggregate (so the sidebar / table can still show it),
-  // but ONLY include active sites in the portfolio totals.
+  // but ONLY include active EV sites in the portfolio financial totals.
+  // ESS sites have no revenue/ROI so they contribute kWh only (energy stat).
   const perSite = sites.map(site => {
     const agg = aggregateSite(site.id, site, dateRange);
     if (site.active !== false) {
+      const isEss = site.siteType === "ess";
+      // kWh and cars/sessions are pan-portfolio metrics — both types contribute
       totalKwh        += agg.totals.totalKwh;
       totalSessions   += agg.totals.totalSessions;
       totalDays       += agg.totals.totalDays;
-      totalRevenueUSD += agg.totals.grossRevenueUSD;
-      totalProfitUSD  += agg.totals.netProfitUSD;
-      totalCapexUSD   += agg.totals.capexUSD;
-      totalOpexUSD    += agg.totals.fixedOpexUSD;
-      totalMonthlyRevenueUSD   += agg.totals.monthlyAvgRevenueUSD;
-      totalMonthlyProfitUSD    += agg.totals.monthlyAvgProfitUSD;
-      totalAnnualizedProfitUSD += toUSD(agg.totals.annualizedProfit, site.currency);
+      // Financial KPIs only from EV sites (ESS has no revenue/CAPEX flow)
+      if (!isEss) {
+        totalRevenueUSD += agg.totals.grossRevenueUSD;
+        totalProfitUSD  += agg.totals.netProfitUSD;
+        totalCapexUSD   += agg.totals.capexUSD;
+        totalOpexUSD    += agg.totals.fixedOpexUSD;
+        totalMonthlyRevenueUSD   += agg.totals.monthlyAvgRevenueUSD;
+        totalMonthlyProfitUSD    += agg.totals.monthlyAvgProfitUSD;
+        totalAnnualizedProfitUSD += toUSD(agg.totals.annualizedProfit, site.currency);
+      }
     }
     return { site, agg };
   });
