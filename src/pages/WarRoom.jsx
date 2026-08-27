@@ -373,9 +373,20 @@ export default function WarRoom() {
                     scrollWheelZoom
                     zoomControl={false}
                     style={{ height: "100%", width: "100%", background: "#020617" }}>
+                    {/* Basemap: Esri Dark Gray Canvas — free, no API key, no quota.
+                        Replaced CARTO (basemaps.cartocdn.com/dark_all), which now stamps
+                        "API KEY REQUIRED" across every tile for keyless use. Esri serves
+                        the base and the labels as two separate layers, so both are stacked
+                        here. NOTE the tile path is {z}/{y}/{x} — y before x, unlike the
+                        {z}/{x}/{y} most providers use. Getting that order wrong yields a
+                        map that loads but shows the wrong place. */}
                     <TileLayer
-                      attribution='&copy; CartoDB · OSM'
-                      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                      attribution='&copy; Esri · HERE · Garmin · FAO · NOAA · USGS'
+                      url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+                      noWrap
+                    />
+                    <TileLayer
+                      url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
                       noWrap
                     />
                     <ZoomControl position="bottomright" />

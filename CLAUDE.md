@@ -221,23 +221,31 @@ session counts in §5.
    ```
 
    Expect no unpkg hits and a non-zero leaflet-pane count.
-2. **Changing a `RETURNS TABLE` signature needs `drop function` first.** Postgres refuses
+2. **The basemap must stay key-free.** Tiles come from **Esri Dark Gray Canvas**
+   (`server.arcgisonline.com/.../World_Dark_Gray_Base` + `..._Reference` stacked for labels)
+   — free, no API key, no quota. It replaced CARTO, which now stamps
+   "API KEY REQUIRED" diagonally across every tile served without a key. Esri's path is
+   **`{z}/{y}/{x}` — row before column**, unlike the `{z}/{x}/{y}` most providers use; get
+   it backwards and the map loads happily while showing the wrong part of the world. To
+   sanity-check ordering, compare labels-tile sizes: at z4 Europe (`/4/5/8`) is ~12.6 kB
+   while mid-Pacific (`/4/8/1`) is ~0.9 kB.
+3. **Changing a `RETURNS TABLE` signature needs `drop function` first.** Postgres refuses
    `create or replace` when the return type changes ("cannot change return type of existing
    function"). Migrations `003`–`005` omit the drop and will error on a database where the
    function already exists; `006` shows the correct pattern.
-3. **Hooks must stay above the early returns in `SiteDashboard`.** It returns early for
+4. **Hooks must stay above the early returns in `SiteDashboard`.** It returns early for
    "site not found" and for ESS sites, so any hook declared below those returns changes the
    hook count between renders and React throws "rendered fewer hooks than expected". This is
    live now that site type is editable and can flip while the page is mounted.
-4. **Migration `003` dropped the partner columns and `005` re-added them.** Don't read `003`
+5. **Migration `003` dropped the partner columns and `005` re-added them.** Don't read `003`
    as current intent.
-5. Geocoding is OSM Nominatim — free, rate-limited to ~1 req/sec, no key. Don't batch it.
-6. **Google Fonts is still loaded from a CDN** (`index.css` line 1). Unlike Leaflet this
+6. Geocoding is OSM Nominatim — free, rate-limited to ~1 req/sec, no key. Don't batch it.
+7. **Google Fonts is still loaded from a CDN** (`index.css` line 1). Unlike Leaflet this
    degrades gracefully — type falls back to Inter / system-ui — so it is not a functional
    risk. Self-host via `@fontsource/dm-sans` + `@fontsource/dm-mono` if the dashboard ever
    needs to run fully offline.
-7. `db/seed_demo_data.sql` inserts fake sites and six months of fake uploads. **Never run it
+8. `db/seed_demo_data.sql` inserts fake sites and six months of fake uploads. **Never run it
    against the production project.**
-8. `npm run lint` reports 19 pre-existing errors (unused imports, `exhaustive-deps`). That is
+9. `npm run lint` reports 19 pre-existing errors (unused imports, `exhaustive-deps`). That is
    the baseline, not something you introduced — compare before and after your change rather
    than aiming for zero.
