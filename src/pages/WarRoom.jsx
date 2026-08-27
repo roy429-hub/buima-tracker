@@ -19,11 +19,18 @@ import SiteQuickUpload from "../components/SiteQuickUpload";
 import ChartTooltip from "../components/ChartTooltip";
 import TimeframeSelector, { getDateRange, TIMEFRAME_LABEL } from "../components/TimeframeSelector";
 
+// Leaflet's default marker images, bundled as assets rather than pulled from a
+// CDN at runtime. Vite fingerprints these and serves them from our own origin,
+// so the map keeps working on networks that block unpkg.
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
 });
 
 // Auto-fit map to all site markers + recompute size when container resizes.

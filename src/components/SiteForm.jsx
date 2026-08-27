@@ -58,8 +58,40 @@ function Field({ label, value, onChange, type = "text", suffix, prefix, placehol
   );
 }
 
+// EV vs ESS discriminator. Drives which dashboard renders (SiteDashboard vs
+// EssSiteDashboard), which parser reads the uploads, and whether the site
+// contributes revenue/CAPEX/ROI to portfolio totals. ESS contributes energy only.
+function SiteTypeToggle({ value, onChange }) {
+  const options = [
+    { id: "ev",  label: "EV Charging",  hint: "Revenue, ROI and payback are tracked." },
+    { id: "ess", label: "ESS / Battery", hint: "Energy flow only — no revenue or ROI." },
+  ];
+  const current = value === "ess" ? "ess" : "ev";
+  return (
+    <div>
+      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Site Type</span>
+      <div className="mt-1 grid grid-cols-2 gap-2">
+        {options.map(o => (
+          <button key={o.id} type="button" onClick={() => onChange(o.id)}
+            className={`px-3 py-2 rounded-lg text-sm font-bold border text-left transition-all ${
+              current === o.id
+                ? "bg-brand text-white border-brand shadow-sm"
+                : "bg-white text-slate-700 border-slate-300 hover:border-brand"
+            }`}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+      <span className="text-[10px] text-slate-500 mt-1 block">
+        {options.find(o => o.id === current).hint}
+      </span>
+    </div>
+  );
+}
+
 function SiteForm({ site, setSite, onSaved, onCancel }) {
   const u = (k) => (v) => setSite({ ...site, [k]: v });
+  const isEss = site.siteType === "ess";
   const [geo, setGeo] = useState({
     status: "idle",
     message: "",
@@ -119,6 +151,9 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
       let sqlFix = "";
       if (/contract_years/i.test(msg)) {
         sqlFix = `ALTER TABLE public.sites ADD COLUMN IF NOT EXISTS contract_years integer DEFAULT 10;`;
+      } else if (/site_type/i.test(msg)) {
+        sqlFix = `ALTER TABLE public.sites   ADD COLUMN IF NOT EXISTS site_type   text  DEFAULT 'ev';
+ALTER TABLE public.uploads ADD COLUMN IF NOT EXISTS ess_summary jsonb;`;
       } else if (/partner_name|partner_email|buima_split_pct|partner_split_pct/i.test(msg)) {
         sqlFix = `ALTER TABLE public.sites
   ADD COLUMN IF NOT EXISTS partner_name      text    DEFAULT '',
@@ -135,9 +170,10 @@ function SiteForm({ site, setSite, onSaved, onCancel }) {
   return (
     <div className="space-y-4">
       <p className="text-xs font-bold text-brand uppercase tracking-wider">Basic Info</p>
+      <SiteTypeToggle value={site.siteType} onChange={u("siteType")} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Site Name *" value={site.name} onChange={u("name")} placeholder="e.g., Restaurant Nieuwe Tijd — Duiven" />
-        <Field label="Charger ID" value={site.chargerId} onChange={u("chargerId")} placeholder="e.g., ffa388af-cfa2-4a" />
+        <Field label={isEss ? "Control Box ID" : "Charger ID"} value={site.chargerId} onChange={u("chargerId")} placeholder="e.g., ffa388af-cfa2-4a" />
       </div>
 
       <Field label="Address *" value={site.address} onChange={u("address")}

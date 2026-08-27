@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Globe, MapPinned, ShieldCheck, ChevronRight, LogOut, User } from "lucide-react";
 import { useAuth, signOut } from "../lib/auth";
+import { APP_VERSION } from "../lib/version";
 
 export default function Layout() {
   const { user } = useAuth();
@@ -108,7 +109,7 @@ export default function Layout() {
           </div>
           <div className="md:text-right">
             <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-700 mb-2">System</p>
-            <p className="text-xs text-slate-500 font-mono">Tracker v0.1 · Phase 1</p>
+            <p className="text-xs text-slate-500 font-mono">Tracker {APP_VERSION}</p>
             <p className="text-xs text-slate-500 font-mono">Build {new Date().toISOString().slice(0,10)}</p>
             <p className="text-[10px] text-slate-400 mt-3">© 2026 Buima Energy · All rights reserved</p>
           </div>

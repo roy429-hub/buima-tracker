@@ -10,6 +10,7 @@ import { currencySymbol, fmt, fmt0 } from "../lib/storage";
 import { fmtUSD, fmtCompact, toUSD } from "../lib/fx";
 import LiveClock from "../components/LiveClock";
 import ChartTooltip from "../components/ChartTooltip";
+import { APP_VERSION } from "../lib/version";
 
 const PERIODS = [
   { id: "daily",   label: "Daily" },
@@ -408,7 +409,7 @@ export default function ShareSiteView() {
           </div>
           <div className="md:text-right">
             <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-700 mb-2">System</p>
-            <p className="text-xs text-slate-500 font-mono">Tracker v0.2 &middot; Investor Brief</p>
+            <p className="text-xs text-slate-500 font-mono">Tracker {APP_VERSION} &middot; Investor Brief</p>
             <p className="text-xs text-slate-500 font-mono">Updated {new Date().toISOString().slice(0,10)}</p>
             <p className="text-[10px] text-slate-400 mt-3">&copy; 2026 Buima Energy &middot; All rights reserved</p>
           </div>

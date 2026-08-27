@@ -37,6 +37,13 @@ export default function SiteDashboard() {
   const [editingSite, setEditingSite] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [timeframe, setTimeframe] = useState("all");
+  // Share-link state. These MUST stay above the early returns below — this
+  // component returns early for "site not found" and for ESS sites, so a hook
+  // declared after them changes the hook count between renders and React throws
+  // "rendered fewer hooks than expected". Reachable now that site type is
+  // editable from the UI and can flip while this page is mounted.
+  const [copied, setCopied] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const dateRange = useMemo(() => getDateRange(timeframe), [timeframe]);
 
   const data = useMemo(() => aggregateSite(id, site, dateRange), [id, site, version, dateRange]);
@@ -86,10 +93,8 @@ export default function SiteDashboard() {
     catch (e) { alert("Delete failed: " + e.message); }
   };
 
-  // Share link state
+  // Share link (state is declared with the other hooks at the top of the component)
   const shareUrl = site?.shareToken ? `${window.location.origin}/share/${site.shareToken}` : "";
-  const [copied, setCopied] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
   const copyLink = async () => {
     if (!shareUrl) return;
     try {

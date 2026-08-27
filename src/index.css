@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
-@import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+/* Leaflet core CSS — bundled from node_modules, NOT a CDN.
+   The map is completely non-functional without these rules (panes and tiles
+   lose their absolute positioning and Tailwind preflight caps tiles at
+   max-width:100%), so it must never depend on a runtime network fetch. */
+@import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
 @tailwind components;

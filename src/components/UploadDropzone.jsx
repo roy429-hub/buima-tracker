@@ -124,9 +124,22 @@ export default function UploadDropzone({ onParsed, theme = "dark" }) {
               <div className="text-xs flex-shrink-0">
                 <span className={`font-bold ${dark ? "text-white" : "text-slate-800"}`}>{r.reportDate}</span>
                 <span className={`mx-2 ${dark ? "text-slate-600" : "text-slate-300"}`}>·</span>
-                <span className={`font-bold ${successText}`}>{r.totalSessions} sess</span>
-                <span className={`mx-1 ${dark ? "text-slate-600" : "text-slate-400"}`}>·</span>
-                <span className={`font-bold ${successText}`}>{r.totalKwh.toFixed(1)} kWh</span>
+                {/* ESS results carry a `summary` and have no sessions/totalKwh.
+                    Reading r.totalKwh unconditionally used to throw here — after
+                    the upload had already saved successfully. */}
+                {r.kind === "ess" ? (
+                  <>
+                    <span className={`font-bold ${successText}`}>{(r.summary?.dischargedKwh ?? 0).toFixed(1)} kWh out</span>
+                    <span className={`mx-1 ${dark ? "text-slate-600" : "text-slate-400"}`}>·</span>
+                    <span className={`font-bold ${successText}`}>{(r.summary?.pvKwh ?? 0).toFixed(1)} kWh PV</span>
+                  </>
+                ) : (
+                  <>
+                    <span className={`font-bold ${successText}`}>{r.totalSessions ?? 0} sess</span>
+                    <span className={`mx-1 ${dark ? "text-slate-600" : "text-slate-400"}`}>·</span>
+                    <span className={`font-bold ${successText}`}>{(r.totalKwh ?? 0).toFixed(1)} kWh</span>
+                  </>
+                )}
               </div>
             </div>
           ))}

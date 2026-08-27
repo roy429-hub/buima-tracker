@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { Lock, Mail, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
 import { useAuth, signIn } from "../lib/auth";
+import { APP_VERSION } from "../lib/version";
 
 export default function Login() {
   const { user, loading } = useAuth();
@@ -99,7 +100,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-[10px] text-slate-600 font-mono mt-4">
-          © 2026 BUIMA ENERGY · Tracker v0.2
+          © 2026 BUIMA ENERGY · Tracker {APP_VERSION}
         </p>
       </div>
     </div>
