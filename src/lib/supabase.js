@@ -93,11 +93,31 @@ const uploadToDB = (u) => ({
   ess_summary: u.essSummary || null,
 });
 
+// PostgREST caps a single response at 1000 rows, so any "fetch everything" query
+// has to page through .range(). We advance by however many rows actually came back
+// and stop on the first empty page, so a server-side cap lower than PAGE_SIZE can
+// never look like the end of the table. Every paged query needs a tiebreaker in its
+// .order() — without one, rows sharing a sort key can shuffle between pages.
+const PAGE_SIZE = 1000;
+
+async function fetchAllRows(buildQuery) {
+  const rows = [];
+  for (;;) {
+    const { data, error } = await buildQuery().range(rows.length, rows.length + PAGE_SIZE - 1);
+    if (error) throw error;
+    const page = data || [];
+    if (page.length === 0) return rows;
+    rows.push(...page);
+  }
+}
+
 // ─── Sites ───────────────────────────────────────────
 export async function dbFetchSites() {
-  const { data, error } = await supabase.from("sites").select("*").order("created_at", { ascending: true });
-  if (error) throw error;
-  return (data || []).map(siteFromDB);
+  const data = await fetchAllRows(() =>
+    supabase.from("sites").select("*")
+      .order("created_at", { ascending: true }).order("id", { ascending: true })
+  );
+  return data.map(siteFromDB);
 }
 
 export async function dbUpsertSite(site) {
@@ -119,16 +139,19 @@ export async function dbDeleteSite(id) {
 
 // ─── Uploads ─────────────────────────────────────────
 export async function dbFetchUploads() {
-  const { data, error } = await supabase.from("uploads").select("*").order("report_date", { ascending: false });
-  if (error) throw error;
-  return (data || []).map(uploadFromDB);
+  const data = await fetchAllRows(() =>
+    supabase.from("uploads").select("*")
+      .order("report_date", { ascending: false }).order("id", { ascending: true })
+  );
+  return data.map(uploadFromDB);
 }
 
 export async function dbFetchUploadsForSite(siteId) {
-  const { data, error } = await supabase.from("uploads").select("*")
-    .eq("site_id", siteId).order("report_date", { ascending: false });
-  if (error) throw error;
-  return (data || []).map(uploadFromDB);
+  const data = await fetchAllRows(() =>
+    supabase.from("uploads").select("*").eq("site_id", siteId)
+      .order("report_date", { ascending: false }).order("id", { ascending: true })
+  );
+  return data.map(uploadFromDB);
 }
 
 export async function dbAddUpload(upload) {
