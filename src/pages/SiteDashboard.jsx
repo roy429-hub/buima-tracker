@@ -10,7 +10,7 @@ import { getSite, currencySymbol, fmt, fmt0, addUpload, deleteUpload, refreshFro
 import { aggregateSite } from "../lib/aggregate";
 import { fmtUSD, fmtCompact } from "../lib/fx";
 import { useStorageVersion } from "../lib/useStorage";
-import { dbRegenerateShareToken } from "../lib/supabase";
+import { dbRegenerateShareToken } from "@db";
 import UploadDropzone from "../components/UploadDropzone";
 import LiveClock from "../components/LiveClock";
 import { SiteFormModal } from "../components/SiteForm";

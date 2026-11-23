@@ -5,7 +5,7 @@ import {
   Sparkles, BarChart3, Loader2, AlertCircle, ShieldCheck, Globe, ChevronRight
 } from "lucide-react";
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
-import { dbFetchSiteByShareToken, dbFetchUploadsByShareToken } from "../lib/supabase";
+import { dbFetchSiteByShareToken, dbFetchUploadsByShareToken } from "@db";
 import { currencySymbol, fmt, fmt0 } from "../lib/storage";
 import { fmtUSD, fmtCompact, toUSD } from "../lib/fx";
 import LiveClock from "../components/LiveClock";

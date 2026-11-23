@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import { getSite, currencySymbol, fmt, fmt0, addUpload, deleteUpload, getUploadsForSite, refreshFromDB } from "../lib/storage";
 import { useStorageVersion } from "../lib/useStorage";
-import { dbRegenerateShareToken } from "../lib/supabase";
+import { dbRegenerateShareToken } from "@db";
 import UploadDropzone from "../components/UploadDropzone";
 import LiveClock from "../components/LiveClock";
 import { SiteFormModal } from "../components/SiteForm";

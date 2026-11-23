@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { Lock, Mail, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
-import { useAuth, signIn } from "../lib/auth";
+import { useAuth, signIn } from "@auth";
 import { APP_VERSION } from "../lib/version";
 
 export default function Login() {

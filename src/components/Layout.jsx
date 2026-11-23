@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Globe, MapPinned, ShieldCheck, ChevronRight, LogOut, User } from "lucide-react";
-import { useAuth, signOut } from "../lib/auth";
+import { useAuth, signOut } from "@auth";
 import { APP_VERSION } from "../lib/version";
 
 export default function Layout() {
