@@ -1,31 +1,4 @@
 {
-  "_comment": [
-    "CUTOVER CONFIG — not active. Replaces vercel.json at go-live:",
-    "    cp vercel.cutover.json vercel.json && git commit && git push",
-    "",
-    "What it does: every request to buima-tracker.vercel.app is redirected to",
-    "tools.buimaenergy.com, keeping the path. This is what makes the cutover",
-    "seamless rather than a race — once it is live, NOTHING can write to",
-    "Supabase any more, because there is no longer a reachable UI pointing at",
-    "it. The final migration re-run after this point is therefore guaranteed",
-    "complete, instead of hoping nobody uploaded in the meantime.",
-    "",
-    "Share links are the reason the path is preserved. The migration kept every",
-    "share_token unchanged, so",
-    "    buima-tracker.vercel.app/share/<token>",
-    " -> tools.buimaenergy.com/share/<token>",
-    "is the same site for the same customer. Investors' existing links keep",
-    "working and nothing has to be reissued.",
-    "",
-    "308 (permanent) rather than 302: it is cacheable and browsers keep the",
-    "method, and we do intend this to be permanent. If a rollback is ever",
-    "needed, restore the old vercel.json — but note that browsers and proxies",
-    "will have cached the 308, so a rollback is not instant for someone who",
-    "already followed it. Roll back by pointing DNS, not by editing this file.",
-    "",
-    "redirects run BEFORE rewrites in Vercel, so the SPA catch-all below never",
-    "sees these requests."
-  ],
   "redirects": [
     {
       "source": "/:path*",
@@ -34,6 +7,9 @@
     }
   ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
   ]
 }
