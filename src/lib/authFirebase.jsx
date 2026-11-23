@@ -12,6 +12,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut as fbSignOut,
 } from "firebase/auth";
 import { auth } from "./firestore";
@@ -49,4 +50,25 @@ export async function signIn(email, password) {
 
 export async function signOut() {
   await fbSignOut(auth);
+}
+
+/** Email a password-reset link.
+ *
+ * Needed for more than forgetfulness: Supabase password hashes could not be
+ * carried over to Firebase, so at cutover every account exists with a random
+ * password nobody knows. This is how staff get in the first time.
+ *
+ * Resolves without telling the caller whether the address has an account —
+ * Login.jsx shows the same message either way, so the form cannot be used to
+ * discover who works here.
+ */
+export async function resetPassword(email) {
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (err) {
+    // auth/user-not-found and auth/invalid-email are swallowed on purpose.
+    // Anything else (network, misconfiguration) is a real failure worth showing.
+    const code = err && err.code;
+    if (code !== "auth/user-not-found" && code !== "auth/invalid-email") throw err;
+  }
 }

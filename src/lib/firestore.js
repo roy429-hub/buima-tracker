@@ -82,6 +82,11 @@ const siteFromDB = (id, r) => r && ({
   currency: r.currency || "USD",
   active: r.active !== false,
   shareToken: r.shareToken,
+  // Set when the site's charging data arrives from Buima EMS instead of a
+  // manual xlsx upload. Read-only here: it is written by the migration /
+  // ems_sync tooling, and siteToDB deliberately omits it so that editing a
+  // site in the UI cannot clear it (dbUpsertSite merges rather than replaces).
+  emsSiteCode: r.emsSiteCode || "",
   createdAt: iso(r.createdAt),
 });
 
