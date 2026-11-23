@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { Lock, Mail, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
-import { useAuth, signIn } from "@auth";
+import { useAuth, signIn, resetPassword } from "@auth";
 import { APP_VERSION } from "../lib/version";
 
 export default function Login() {
@@ -10,7 +10,9 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   if (loading) return <FullPageSpinner />;
   if (user) return <Navigate to="/" replace />;
@@ -18,6 +20,7 @@ export default function Login() {
   const submit = async (e) => {
     e.preventDefault();
     setError("");
+    setNotice("");
     setSubmitting(true);
     try {
       await signIn(email, password);
@@ -26,6 +29,28 @@ export default function Login() {
       setError(err.message || "Sign-in failed");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Staff have no password on first use: Supabase hashes could not be moved to
+  // Firebase, so every account was created with a random one nobody knows.
+  // This is the only way in, as well as the ordinary forgot-password path.
+  const forgot = async () => {
+    setError("");
+    setNotice("");
+    if (!email) {
+      setError("Enter your email address first, then choose Forgot password.");
+      return;
+    }
+    setResetting(true);
+    try {
+      await resetPassword(email);
+      setNotice("If that address has an account, a reset link is on its way. "
+              + "Check your inbox, and your spam folder.");
+    } catch (err) {
+      setError(err.message || "Could not send the reset email");
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -76,6 +101,13 @@ export default function Login() {
                 </div>
               </label>
 
+              {notice && (
+                <div className="flex items-start gap-2 text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+                  <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{notice}</span>
+                </div>
+              )}
+
               {error && (
                 <div className="flex items-start gap-2 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
                   <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -87,6 +119,11 @@ export default function Login() {
                 className="w-full bg-brand hover:bg-brand-dark text-white font-bold py-2.5 rounded-lg shadow-[0_0_16px_rgba(190,18,60,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all">
                 {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 {submitting ? "Signing in…" : "Sign in"}
+              </button>
+
+              <button type="button" onClick={forgot} disabled={resetting}
+                className="w-full text-[11px] text-slate-400 hover:text-brand disabled:opacity-50 transition-colors">
+                {resetting ? "Sending…" : "Forgot password? / First time signing in?"}
               </button>
             </form>
 

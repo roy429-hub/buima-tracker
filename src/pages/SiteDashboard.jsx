@@ -20,7 +20,7 @@ import TimeframeSelector, { getDateRange } from "../components/TimeframeSelector
 import EssSiteDashboard from "./EssSiteDashboard";
 import { generatePartnerStatement } from "../lib/pdfReport";
 import { getUploadsForSite } from "../lib/storage";
-import { FileText } from "lucide-react";
+import { FileText, ChevronDown } from "lucide-react";
 
 const PERIODS = [
   { id: "daily",   label: "Daily" },
@@ -44,6 +44,10 @@ export default function SiteDashboard() {
   // editable from the UI and can flip while this page is mounted.
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  // Declared here, above the early returns below, on purpose: a hook after
+  // `if (!site)` or the ESS branch would change the hook count between
+  // renders and React would throw. See CLAUDE.md section 8 item 4.
+  const [uploadOpen, setUploadOpen] = useState(false);
   const dateRange = useMemo(() => getDateRange(timeframe), [timeframe]);
 
   const data = useMemo(() => aggregateSite(id, site, dateRange), [id, site, version, dateRange]);
@@ -57,6 +61,11 @@ export default function SiteDashboard() {
 
   // ESS sites use a different dashboard (energy flows, not EV revenue)
   if (site.siteType === "ess") return <EssSiteDashboard site={site} />;
+
+  // A site fed by the EMS does not need the manual dropzone in the way.
+  // Only the Firestore backend carries emsSiteCode, so on the Supabase
+  // build this is always false and the panel behaves exactly as before.
+  const autoSynced = Boolean(site.emsSiteCode);
 
   const sym = currencySymbol(site.currency);
   const t = data.totals;
@@ -280,17 +289,52 @@ export default function SiteDashboard() {
           {/* UPLOAD + UPLOADS MANAGER */}
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-              <div className="bg-slate-800/50 border-b border-slate-800 px-4 py-2.5 flex items-center gap-2">
+              <button type="button" onClick={() => setUploadOpen(v => !v)}
+                disabled={!autoSynced}
+                className={`w-full bg-slate-800/50 border-b border-slate-800 px-4 py-2.5 flex items-center gap-2 text-left ${autoSynced ? "hover:bg-slate-800/80 transition-colors" : "cursor-default"}`}>
                 <Upload className="w-3.5 h-3.5 text-brand" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Upload Daily Reports</h3>
-              </div>
-              <div className="p-5">
-                <UploadDropzone onParsed={handleParsed} />
-                <p className="text-[10px] text-slate-500 mt-3 flex items-start gap-1.5">
-                  <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                  Drop multiple files at once · Each file is one day · Re-uploading the same date overwrites
-                </p>
-              </div>
+                {autoSynced && (
+                  <>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded px-1.5 py-0.5">
+                      EMS 自動同步
+                    </span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 ml-auto transition-transform ${uploadOpen ? "rotate-180" : ""}`} />
+                  </>
+                )}
+              </button>
+
+              {/* Collapsed by default once a site is fed by the EMS. Manual upload
+                  still works, but a file dropped for a date the EMS also reports
+                  is overwritten by the next sync — so it is folded away rather
+                  than removed, and says why when opened. */}
+              {autoSynced && !uploadOpen ? (
+                <div className="p-5 text-[11px] text-slate-400 leading-relaxed">
+                  此案場的充電資料由 <span className="text-slate-200 font-semibold">Buima EMS</span> 每日自動同步
+                  （案場代號 <span className="font-mono text-slate-300">{site.emsSiteCode}</span>），不需要手動上傳。
+                  <button type="button" onClick={() => setUploadOpen(true)}
+                    className="block mt-2 text-brand hover:underline">
+                    仍要手動上傳 →
+                  </button>
+                </div>
+              ) : (
+                <div className="p-5">
+                  {autoSynced && (
+                    <p className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5 mb-3 flex items-start gap-1.5">
+                      <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                      <span>
+                        此案場已自動同步。若上傳的日期 EMS 也有資料，<b>下次同步會覆蓋掉</b>。
+                        僅建議用於 EMS 沒有資料的日期。
+                      </span>
+                    </p>
+                  )}
+                  <UploadDropzone onParsed={handleParsed} />
+                  <p className="text-[10px] text-slate-500 mt-3 flex items-start gap-1.5">
+                    <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                    Drop multiple files at once · Each file is one day · Re-uploading the same date overwrites
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="col-span-12 lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">

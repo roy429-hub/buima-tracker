@@ -41,3 +41,18 @@ export async function signIn(email, password) {
 export async function signOut() {
   await supabase.auth.signOut();
 }
+
+/** Email a password-reset link.
+ *
+ * Mirrors resetPassword() in authFirebase.jsx so Login.jsx works unchanged on
+ * either backend. Resolves without revealing whether the address has an
+ * account, so the form cannot be used to discover who works here.
+ */
+export async function resetPassword(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/login`,
+  });
+  // Supabase already declines to confirm whether the address exists; only
+  // surface transport or configuration failures.
+  if (error && error.status && error.status >= 500) throw error;
+}
