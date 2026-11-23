@@ -1,0 +1,51 @@
+rules_version = '2';
+
+// Buima Tracker — Firestore security rules
+//
+// Mirrors the two access tiers the Supabase schema had:
+//   1. Staff  — signed in, full read/write on everything (the old
+//               "sites_authenticated_all" / "uploads_authenticated_all" policies).
+//   2. Share link — no login, read-only, one site, via an unguessable token.
+//
+// WHY THE /shared MIRROR EXISTS
+// Supabase did tier 2 with SECURITY DEFINER functions that took the token as an
+// argument. Firestore rules cannot do that: a rule can inspect the requested
+// PATH and the stored document, but it cannot know that the caller "knows a
+// secret" unless that secret IS the path. A rule like
+//     allow read: if resource.data.shareToken == <anything>
+// is trivially true for every document and would expose the whole table.
+// So the public copy lives UNDER the token: /shared/{token}/...
+// Knowing the path is knowing the secret, exactly as before.
+//
+// `list` is denied on /shared itself so nobody can enumerate tokens.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Tier 1: staff-only canonical data ──────────────────────────
+    match /sites/{siteId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /uploads/{uploadId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ── Tier 2: public read-only share links ───────────────────────
+    match /shared/{token} {
+      allow get:   if true;                  // one site, token must be known
+      allow list:  if false;                 // cannot enumerate tokens
+      allow write: if request.auth != null;  // only staff maintain the mirror
+
+      match /uploads/{reportDate} {
+        allow read:  if true;                // only reachable under a known token
+        allow write: if request.auth != null;
+      }
+    }
+
+    // Anything not matched above is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

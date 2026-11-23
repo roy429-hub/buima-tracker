@@ -6,7 +6,7 @@ import Sites from "./pages/Sites";
 import SiteDashboard from "./pages/SiteDashboard";
 import Login from "./pages/Login";
 import ShareSiteView from "./pages/ShareSiteView";
-import { AuthProvider } from "./lib/auth";
+import { AuthProvider } from "@auth";
 
 export default function App() {
   return (

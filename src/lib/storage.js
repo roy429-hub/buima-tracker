@@ -5,7 +5,7 @@
 import {
   dbFetchSites, dbUpsertSite, dbDeleteSite,
   dbFetchUploads, dbAddUpload, dbDeleteUpload,
-} from "./supabase";
+} from "@db";
 
 let _sites = [];
 let _uploads = [];

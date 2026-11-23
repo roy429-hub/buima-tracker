@@ -1,0 +1,14 @@
+{
+  "indexes": [
+    {
+      "comment": "dbFetchUploadsForSite(): where(siteId ==) + orderBy(reportDate desc). Firestore requires a composite index for an equality filter combined with an orderBy on a different field; without it the Site Dashboard throws at runtime.",
+      "collectionGroup": "uploads",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "siteId", "order": "ASCENDING" },
+        { "fieldPath": "reportDate", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
