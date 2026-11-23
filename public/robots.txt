@@ -1,0 +1,8 @@
+# Buima Tracker is an internal operations tool. Nothing here should be indexed.
+#
+# The /share/<token> pages are deliberately readable without a login so that
+# customers and investors can be sent a link, but they expose per-site CAPEX,
+# revenue, net profit and partner split. A share link pasted anywhere a crawler
+# can reach it would otherwise end up in a search index.
+User-agent: *
+Disallow: /
